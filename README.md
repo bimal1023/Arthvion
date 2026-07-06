@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/bimal1023-auditforge-badge.png)](https://mseep.ai/app/bimal1023-auditforge)
+
 # Arthvion
 
 **AI-powered private equity due diligence — in minutes, not weeks.**
