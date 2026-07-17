@@ -726,3 +726,64 @@ class CreditTopup(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
+
+
+class Voucher(Base):
+    """Admin-issued credit voucher. Redeemed by users for memo credits.
+
+    `code` is the human-facing string (e.g. "ARTH-7F3K-9Q2M"). A voucher can
+    be redeemed up to `max_redemptions` times total, but only once per user
+    (enforced by the unique constraint on VoucherRedemption).
+    """
+    __tablename__ = "vouchers"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    code: Mapped[str] = mapped_column(String(40), unique=True, nullable=False, index=True)
+    credits: Mapped[int] = mapped_column(Integer, nullable=False)
+    max_redemptions: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    redeemed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    expires_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    note: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    redemptions: Mapped[list["VoucherRedemption"]] = relationship(
+        back_populates="voucher", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+
+class VoucherRedemption(Base):
+    """One user redeeming one voucher. Unique per (voucher, user)."""
+    __tablename__ = "voucher_redemptions"
+    __table_args__ = (
+        UniqueConstraint("voucher_id", "user_id", name="uq_voucher_user"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    voucher_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("vouchers.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, index=True,
+    )
+    workspace_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="SET NULL"), nullable=True
+    )
+    credits: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    voucher: Mapped["Voucher"] = relationship(back_populates="redemptions")

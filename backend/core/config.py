@@ -107,6 +107,10 @@ class Settings(BaseSettings):
     # CORS — comma-separated list of allowed origins
     allowed_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
 
+    # Admin — comma-separated emails allowed to hit /api/v1/admin/*.
+    # Accounts must still exist and log in normally; this only grants the role.
+    admin_emails: str = "admin@arthvion.com"
+
     # Response cache — reuse completed reports for the same company within this window
     report_cache_ttl_hours: int = 24
 
@@ -122,6 +126,10 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+
+    @property
+    def admin_email_list(self) -> list[str]:
+        return [e.strip().lower() for e in self.admin_emails.split(",") if e.strip()]
 
 
 @lru_cache()

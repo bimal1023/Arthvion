@@ -31,6 +31,7 @@ from backend.api.team_routes import router as team_router
 from backend.api.comments_routes import router as comments_router
 from backend.api.activity_routes import router as activity_router
 from backend.api.notifications_routes import router as notifications_router
+from backend.api.admin_routes import router as admin_router
 
 settings = get_settings()
 logging.basicConfig(
@@ -288,6 +289,7 @@ app.include_router(team_router, prefix="/api/v1")
 app.include_router(comments_router, prefix="/api/v1")
 app.include_router(activity_router, prefix="/api/v1")
 app.include_router(notifications_router, prefix="/api/v1")
+app.include_router(admin_router, prefix="/api/v1")
 
 
 @app.get("/health")

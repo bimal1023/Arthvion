@@ -20,7 +20,16 @@ from backend.core.config import get_settings
 from backend.core.database import get_session
 from backend.core.rate_limit import limiter
 from backend.core.workspace import WorkspaceContext, get_workspace_context, require_role
-from backend.models.db import CreditTopup, ReportRecord, User, WatchlistItem, Workspace
+from backend.models.db import (
+    CreditLog,
+    CreditTopup,
+    ReportRecord,
+    User,
+    Voucher,
+    VoucherRedemption,
+    WatchlistItem,
+    Workspace,
+)
 from backend.services.billing import (
     PLAN_CREDITS,
     WATCHLIST_MAX_SLOTS,
@@ -572,3 +581,88 @@ def _apply_subscription_to_workspace(ws: Workspace, sub: Any) -> None:
             "Granted %d credits to workspace %s on %s upgrade",
             ws.memo_credits, ws.id, new_tier,
         )
+
+
+# ── Voucher redemption (user-facing) ─────────────────────────────────────────
+
+class RedeemVoucherRequest(BaseModel):
+    code: str
+
+
+@router.post("/redeem-voucher")
+@limiter.limit("10/hour")
+async def redeem_voucher(
+    request: Request,
+    req: RedeemVoucherRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_session),
+) -> dict:
+    """Redeem an admin-issued voucher code for memo credits.
+
+    Credits land on the user's active workspace (same place report runs
+    decrement from). One redemption per user per voucher.
+    """
+    code = req.code.strip().upper()
+    if not code:
+        raise HTTPException(status_code=400, detail="Voucher code required.")
+
+    # Lock the voucher row so concurrent redemptions can't oversubscribe it
+    voucher = (
+        await db.execute(select(Voucher).where(Voucher.code == code).with_for_update())
+    ).scalar_one_or_none()
+    if not voucher:
+        raise HTTPException(status_code=404, detail="Invalid voucher code.")
+
+    now = datetime.now(timezone.utc)
+    if voucher.expires_at and voucher.expires_at < now:
+        raise HTTPException(status_code=410, detail="This voucher has expired.")
+    if voucher.redeemed_count >= voucher.max_redemptions:
+        raise HTTPException(status_code=410, detail="This voucher is fully redeemed.")
+
+    already = (
+        await db.execute(
+            select(VoucherRedemption).where(
+                VoucherRedemption.voucher_id == voucher.id,
+                VoucherRedemption.user_id == current_user.id,
+            )
+        )
+    ).scalar_one_or_none()
+    if already:
+        raise HTTPException(status_code=409, detail="You already redeemed this voucher.")
+
+    ws = (
+        await db.get(Workspace, current_user.active_workspace_id)
+        if current_user.active_workspace_id
+        else None
+    )
+    if ws:
+        ws.memo_credits += voucher.credits
+        db.add(
+            CreditLog(
+                workspace_id=ws.id,
+                user_id=current_user.id,
+                action="credit_add",
+                delta=voucher.credits,
+            )
+        )
+        new_balance = ws.memo_credits
+    else:
+        current_user.memo_credits += voucher.credits
+        new_balance = current_user.memo_credits
+
+    voucher.redeemed_count += 1
+    db.add(
+        VoucherRedemption(
+            voucher_id=voucher.id,
+            user_id=current_user.id,
+            workspace_id=ws.id if ws else None,
+            credits=voucher.credits,
+        )
+    )
+    await db.commit()
+    logger.info("Voucher %s redeemed by %s (+%d credits)", code, current_user.email, voucher.credits)
+    return {
+        "detail": f"Voucher redeemed — {voucher.credits} credits added.",
+        "credits_added": voucher.credits,
+        "memo_credits": new_balance,
+    }

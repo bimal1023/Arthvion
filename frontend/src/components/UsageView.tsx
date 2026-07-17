@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, Eye, Zap, Loader2, AlertTriangle, Infinity as InfinityIcon, Plus } from "lucide-react";
+import { FileText, Eye, Zap, Loader2, AlertTriangle, Infinity as InfinityIcon, Plus, Ticket } from "lucide-react";
 import { apiFetch } from "@/lib/auth";
 import type { UsageSummary } from "@/lib/types";
 
@@ -79,6 +79,19 @@ export function UsageView({ onUsagePercent }: Props) {
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /** Re-fetch usage after a voucher redemption bumps the balance. */
+  async function refresh() {
+    try {
+      const res = await apiFetch("/api/v1/billing/usage");
+      if (!res.ok) return;
+      const json: UsageSummary = await res.json();
+      setData(json);
+      onUsagePercent?.(json.memo.unlimited ? null : json.memo.percent);
+    } catch {
+      // non-fatal — the redeem message already confirmed success
+    }
+  }
 
   if (loading) {
     return (
@@ -223,6 +236,8 @@ export function UsageView({ onUsagePercent }: Props) {
         />
       </div>
 
+      <RedeemVoucher onRedeemed={refresh} />
+
       {renewal && (
         <div style={{ fontSize: 12, color: "var(--n100)", paddingLeft: 2 }}>
           Billing cycle ends {renewal}
@@ -243,6 +258,79 @@ function Stat({ icon, label, value, accent }: { icon: React.ReactNode; label: st
       <div style={{ fontSize: 26, fontWeight: 800, color: "var(--n900)", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.02em" }}>
         {value}
       </div>
+    </div>
+  );
+}
+
+/** Compact voucher-redemption card — POSTs to /billing/redeem-voucher. */
+function RedeemVoucher({ onRedeemed }: { onRedeemed: () => void }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function redeem() {
+    if (!code.trim() || busy) return;
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await apiFetch("/api/v1/billing/redeem-voucher", {
+        method: "POST",
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setMsg({ ok: true, text: data.detail ?? "Voucher redeemed." });
+        setCode("");
+        onRedeemed();
+      } else {
+        setMsg({ ok: false, text: data.detail ?? "Could not redeem voucher." });
+      }
+    } catch {
+      setMsg({ ok: false, text: "Network error — try again." });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div style={card}>
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+        <Ticket size={15} style={{ color: "var(--p500)" }} />
+        <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--n200)", letterSpacing: "0.02em" }}>
+          Redeem a voucher
+        </span>
+      </div>
+      <div style={{ display: "flex", gap: 8, maxWidth: 420 }}>
+        <input
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          onKeyDown={(e) => { if (e.key === "Enter") void redeem(); }}
+          placeholder="ARTH-XXXX-XXXX"
+          style={{
+            flex: 1, padding: "8px 12px", borderRadius: 6,
+            border: "1px solid var(--n30)", fontSize: 13, outline: "none",
+            fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.03em",
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => void redeem()}
+          disabled={busy || !code.trim()}
+          style={{
+            padding: "8px 16px", borderRadius: 6, border: "none",
+            background: "var(--b500)", color: "#fff", fontSize: 13, fontWeight: 600,
+            cursor: busy || !code.trim() ? "default" : "pointer",
+            opacity: busy || !code.trim() ? 0.6 : 1,
+          }}
+        >
+          {busy ? "Redeeming…" : "Redeem"}
+        </button>
+      </div>
+      {msg && (
+        <div style={{ marginTop: 8, fontSize: 12, fontWeight: 600, color: msg.ok ? "var(--g700)" : "var(--r700)" }}>
+          {msg.text}
+        </div>
+      )}
     </div>
   );
 }
