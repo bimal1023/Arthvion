@@ -48,6 +48,7 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState("Analyst");
   const [workspaceRole, setWorkspaceRole] = useState<string>("admin");
   const [workspaceName, setWorkspaceName] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // ── UI state (which tab, search, form prefill) ───────────────────────────────
   const [activeTab,   setActiveTab]   = useState<NavTab>("new-report");
@@ -87,6 +88,7 @@ export default function DashboardPage() {
         if (data?.email) setUserName(data.full_name || data.email.split("@")[0]);
         if (data?.workspace_role) setWorkspaceRole(data.workspace_role);
         if (data?.workspace_name) setWorkspaceName(data.workspace_name);
+        setIsAdmin(Boolean(data?.is_admin));
         setReady(true);
       }
     });
@@ -309,6 +311,7 @@ export default function DashboardPage() {
               onSearchOpen={() => setSearchOpen(true)}
               onNotifications={() => setNotifOpen((v) => !v)}
               alertCount={notifCount + watchlistAlertCount}
+              isAdmin={isAdmin}
             />
             <NotificationsDropdown
               open={notifOpen}

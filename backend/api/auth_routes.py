@@ -89,6 +89,9 @@ class UserResponse(BaseModel):
     current_period_end: datetime | None = None
     is_verified: bool = True
     created_at: datetime | None = None
+    # True when the email is in ADMIN_EMAILS — drives the Admin button in the UI.
+    # The real gate is server-side in backend/api/admin_routes.py.
+    is_admin: bool = False
     # Workspace info (populated from active workspace)
     workspace_id: str | None = None
     workspace_name: str | None = None
@@ -248,6 +251,7 @@ async def me(
         current_period_end=current_period_end,
         is_verified=current_user.is_verified,
         created_at=current_user.created_at,
+        is_admin=current_user.email.lower() in get_settings().admin_email_list,
         workspace_id=ws_id,
         workspace_name=ws_name,
         workspace_role=ws_role,

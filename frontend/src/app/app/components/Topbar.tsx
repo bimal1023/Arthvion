@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Search, Bell, HelpCircle, LogOut, Command, BookOpen, Mail } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Bell, HelpCircle, LogOut, Command, BookOpen, Mail, ShieldCheck } from "lucide-react";
 import type { NavTab, RunStatus } from "../types";
 import { TAB_LABELS, TAB_PARENT } from "../constants";
 
@@ -13,10 +13,13 @@ interface TopbarProps {
   onSearchOpen: () => void;
   onNotifications: () => void;
   alertCount?: number;
+  /** Shows the Admin-console button. Cosmetic only — the API enforces access. */
+  isAdmin?: boolean;
 }
 
 export function Topbar({
   activeTab, runStatus, onBack, onSignOut, onSearchOpen, onNotifications, alertCount = 0,
+  isAdmin = false,
 }: TopbarProps) {
   const statusLabel = runStatus === "running" ? "RUNNING"
     : runStatus === "complete" ? "COMPLETE"
@@ -53,6 +56,20 @@ export function Topbar({
         <span className={`tb-status ${runStatus}`}>
           <span className="dot" />{statusLabel}
         </span>
+      )}
+      {isAdmin && (
+        <a
+          href="/admin"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "5px 12px", marginRight: 4, borderRadius: 999,
+            background: "var(--b50)", color: "var(--b700)",
+            fontSize: 12, fontWeight: 700, textDecoration: "none",
+            border: "1px solid var(--b100)", whiteSpace: "nowrap",
+          }}
+        >
+          <ShieldCheck size={13} /> Admin
+        </a>
       )}
       <button className="tb-icon-btn" onClick={onSearchOpen} aria-label="Search"><Search size={15} /></button>
       <button
