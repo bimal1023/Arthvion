@@ -1,0 +1,16 @@
+.git
+.venv
+venv
+node_modules
+frontend/node_modules
+frontend/.next
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+infra/terraform
+infra/.env
+infra/.env.*
+!infra/.env.example
+*.egg-info
+celerybeat-schedule.db

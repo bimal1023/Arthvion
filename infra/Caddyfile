@@ -1,0 +1,10 @@
+arthvion.com, www.arthvion.com {
+	reverse_proxy frontend:3000
+}
+
+api.arthvion.com {
+	# flush immediately so SSE (/reports/{id}/events) isn't buffered
+	reverse_proxy backend:8000 {
+		flush_interval -1
+	}
+}

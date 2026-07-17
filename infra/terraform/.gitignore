@@ -1,0 +1,21 @@
+# Terraform state — contains secrets and infra details, never commit
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+
+# Saved plans — may embed sensitive values
+tfplan
+*.tfplan
+
+# Provider binaries / local cache
+.terraform/
+.terraform.tfstate.lock.info
+
+# Crash logs
+crash.log
+crash.*.log
+
+# Variable files that may hold secrets
+*.tfvars
+*.tfvars.json
+!example.tfvars

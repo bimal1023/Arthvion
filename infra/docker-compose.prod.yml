@@ -1,0 +1,101 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: arthvion-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: arthvion
+    volumes:
+      - /mnt/data/pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: arthvion-redis
+    restart: unless-stopped
+    command: >
+      sh -c 'redis-server --requirepass "$${REDIS_PASSWORD:-changeme}"'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-changeme}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    container_name: arthvion-backend
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn backend.main:app --host 0.0.0.0 --port 8000
+
+  worker:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    container_name: arthvion-worker
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A backend.core.celery_app worker --loglevel=info --concurrency=1
+
+  beat:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    container_name: arthvion-beat
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A backend.core.celery_app beat --loglevel=info
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        # Baked into the build — this is the Next.js rewrite proxy target
+        # (server-side only; the browser calls relative /api/* paths).
+        NEXT_PUBLIC_API_URL: http://backend:8000
+    container_name: arthvion-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    env_file: .env
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: arthvion-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - /mnt/data/caddy_data:/data
+      - /mnt/data/caddy_config:/config
+    depends_on:
+      - backend
+      - frontend
