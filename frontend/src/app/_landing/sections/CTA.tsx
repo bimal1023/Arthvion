@@ -9,7 +9,7 @@ export function CTA() {
       <div className="container">
         <div className="cta-card">
           <span className="eyebrow">Ready to dispatch your first run?</span>
-          <h2>The next time you need a memo,<br />don&apos;t write one.</h2>
+          <h2>The next time you need a memo,<br /><span className="serif">don&apos;t write one.</span></h2>
           <p className="lead" style={{ maxWidth: 560, textAlign: "center" }}>
             Start with three free runs. No credit card. Memos arrive in your inbox in under three minutes.
           </p>
@@ -19,9 +19,9 @@ export function CTA() {
             </Link>
             <a href="#" className="btn btn-outline btn-lg">Book a 20-min demo</a>
           </div>
-          <div style={{
+          <div className="cta-trust" style={{
             display: "flex", alignItems: "center", gap: "var(--s-200)",
-            color: "var(--n200)", fontSize: "var(--fs-small)", marginTop: "var(--s-100)",
+            fontSize: "var(--fs-small)", marginTop: "var(--s-100)",
           }}>
             {TRUST_CHIPS.map((t) => (
               <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>

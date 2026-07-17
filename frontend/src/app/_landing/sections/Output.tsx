@@ -1,4 +1,5 @@
 import { IconInfo } from "../icons";
+import { Reveal } from "../Reveal";
 
 const OUTPUT_KEYS = [
   { n: "01", text: <><b>Every claim is citable.</b> Hover any superscript to jump to the source paragraph in the underlying filing.</> },
@@ -19,13 +20,15 @@ export function Output() {
   return (
     <section className="output" id="output">
       <div className="container">
-        <div className="section-head">
-          <span className="eyebrow">The output</span>
-          <h2>An analyst-grade memo, every time.</h2>
-          <p className="lead">
-            Not a summary. Not a bulleted blob. A real investment memo with structure, evidence, and a single defensible conclusion.
-          </p>
-        </div>
+        <Reveal>
+          <div className="section-head">
+            <span className="eyebrow">The output</span>
+            <h2>An analyst-grade memo, every time.</h2>
+            <p className="lead">
+              Not a summary. Not a bulleted blob. A real investment memo with structure, evidence, and a single defensible conclusion.
+            </p>
+          </div>
+        </Reveal>
 
         <div className="output-grid">
           <aside className="output-side">

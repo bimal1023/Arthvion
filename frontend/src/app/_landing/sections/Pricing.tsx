@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { IconCheck } from "../icons";
 import { getToken } from "@/lib/auth";
+import { Reveal } from "../Reveal";
 
 /** What happens when a pricing CTA is clicked. */
 type CtaAction =
@@ -83,13 +84,15 @@ export function Pricing() {
   return (
     <section className="section" id="pricing">
       <div className="container">
-        <div className="section-head">
-          <span className="eyebrow">Pricing</span>
-          <h2>Pay per memo. Or per analyst.</h2>
-          <p className="lead">
-            Three tiers, no per-seat trickery. Start free; upgrade only when your firm starts to depend on it.
-          </p>
-        </div>
+        <Reveal>
+          <div className="section-head">
+            <span className="eyebrow">Pricing</span>
+            <h2>Pay per memo. Or per analyst.</h2>
+            <p className="lead">
+              Three tiers, no per-seat trickery. Start free; upgrade only when your firm starts to depend on it.
+            </p>
+          </div>
+        </Reveal>
 
         <div className="pricing-grid">
           {TIERS.map((t) => (

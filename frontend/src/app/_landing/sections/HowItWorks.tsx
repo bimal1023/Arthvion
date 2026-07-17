@@ -1,4 +1,5 @@
 import { IconBolt, IconCheck, IconClock, IconSynthesis } from "../icons";
+import { Reveal } from "../Reveal";
 
 const STEPS = [
   {
@@ -31,13 +32,15 @@ export function HowItWorks() {
       }}
     >
       <div className="container">
-        <div className="section-head">
-          <span className="eyebrow">How it works</span>
-          <h2>Brief once. Dispatch four agents.</h2>
-          <p className="lead">
-            The same workflow your firm runs already, compressed into the time it takes to read a CIM cover page.
-          </p>
-        </div>
+        <Reveal>
+          <div className="section-head">
+            <span className="eyebrow">How it works</span>
+            <h2>Brief once. Dispatch four agents.</h2>
+            <p className="lead">
+              The same workflow your firm runs already, compressed into the time it takes to read a CIM cover page.
+            </p>
+          </div>
+        </Reveal>
 
         <div className="how-row">
           {STEPS.map((s) => (

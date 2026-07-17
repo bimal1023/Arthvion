@@ -30,7 +30,7 @@ export function Hero() {
 
           {/* ── Left: copy ── */}
           <div>
-            <span className="hero-eyebrow">
+            <span className="hero-eyebrow rise rise-1">
               <span className="lozenge lozenge-bold-inprog">New</span>
               v4 — agent orchestration is live
               <span style={{ marginLeft: 4, color: "var(--n100)", display: "inline-flex" }}>
@@ -38,18 +38,18 @@ export function Hero() {
               </span>
             </span>
 
-            <h1>
+            <h1 className="rise rise-2">
               Institutional diligence,<br />
-              <span className="accent">on demand.</span>
+              <span className="serif">on demand.</span>
             </h1>
 
-            <p className="lead">
+            <p className="lead rise rise-3">
               Four specialist agents pull SEC filings, market intelligence, and litigation records
               in parallel — then synthesise a single sourced memo. The work that used to take a junior
               analyst two days finishes in about three minutes.
             </p>
 
-            <div className="hero-actions">
+            <div className="hero-actions rise rise-3">
               <a href="#cta" className="btn btn-primary btn-lg">
                 Start free <IconArrow />
               </a>
@@ -58,7 +58,7 @@ export function Hero() {
               </a>
             </div>
 
-            <div className="hero-meta">
+            <div className="hero-meta rise rise-4">
               {HERO_META.map((m) => (
                 <div className="hero-meta-item" key={m.label}>
                   <span className="hero-meta-num tnum">{m.num}</span>
@@ -69,7 +69,7 @@ export function Hero() {
           </div>
 
           {/* ── Right: live report mockup ── */}
-          <div style={{ position: "relative" }}>
+          <div style={{ position: "relative" }} className="rise rise-5">
             <div className="viz-card">
               <div className="viz-head">
                 <div className="viz-head-dots"><span /><span /><span /></div>
@@ -128,10 +128,14 @@ export function Hero() {
           </div>
         </div>
 
-        {/* Logo row */}
-        <div className="logo-row">
-          <span className="logo-row-label">Trusted by analysts at</span>
-          {LOGO_ROW.map((l) => <span className="logo-mark" key={l}>{l}</span>)}
+        {/* Logo marquee */}
+        <div className="marquee">
+          <span className="marquee-label">Trusted by analysts at</span>
+          <div className="marquee-track">
+            {[...LOGO_ROW, ...LOGO_ROW].map((l, i) => (
+              <span className="logo-mark" key={`${l}-${i}`}>{l}</span>
+            ))}
+          </div>
         </div>
       </div>
     </header>

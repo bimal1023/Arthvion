@@ -34,6 +34,7 @@ export function Nav() {
           <a href="#how"        className="nav-link">How it works</a>
           <a href="#output"     className="nav-link">The output</a>
           <a href="#pricing"    className="nav-link">Pricing</a>
+          <a href="#faq"        className="nav-link">FAQ</a>
           <Link href="/docs"    className="nav-link">Docs</Link>
 
           <Link

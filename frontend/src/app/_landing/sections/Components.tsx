@@ -3,6 +3,7 @@ import {
   IconSynthesis, IconLock, IconDoc, IconBolt, IconSearch,
   IconClock, IconPulse, IconEye,
 } from "../icons";
+import { Reveal } from "../Reveal";
 
 const SPECIALIST_AGENTS = [
   {
@@ -74,14 +75,16 @@ export function Components() {
   return (
     <section className="section" id="components">
       <div className="container">
-        <div className="section-head">
-          <span className="eyebrow">What&apos;s inside</span>
-          <h2>Every piece of an analyst&apos;s stack, reusable.</h2>
-          <p className="lead">
-            Arthvion ships as a set of composable agents and surfaces. Combine them into the
-            workflow you already run — or use the full investment-memo template as-is.
-          </p>
-        </div>
+        <Reveal>
+          <div className="section-head">
+            <span className="eyebrow">What&apos;s inside</span>
+            <h2>Every piece of an analyst&apos;s stack, reusable.</h2>
+            <p className="lead">
+              Arthvion ships as a set of composable agents and surfaces. Combine them into the
+              workflow you already run — or use the full investment-memo template as-is.
+            </p>
+          </div>
+        </Reveal>
 
         {/* Specialist agents */}
         <div className="comp-group">

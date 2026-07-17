@@ -6,7 +6,9 @@ import { Hero } from "./_landing/sections/Hero";
 import { Components } from "./_landing/sections/Components";
 import { HowItWorks } from "./_landing/sections/HowItWorks";
 import { Output } from "./_landing/sections/Output";
+import { Proof } from "./_landing/sections/Proof";
 import { Pricing } from "./_landing/sections/Pricing";
+import { Faq } from "./_landing/sections/Faq";
 import { CTA } from "./_landing/sections/CTA";
 import { Footer } from "./_landing/sections/Footer";
 
@@ -24,7 +26,7 @@ export default function LandingPage() {
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
       <link
         rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap"
       />
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
 
@@ -34,7 +36,9 @@ export default function LandingPage() {
         <Components />
         <HowItWorks />
         <Output />
+        <Proof />
         <Pricing />
+        <Faq />
         <CTA />
         <Footer />
       </div>
