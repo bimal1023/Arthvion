@@ -29,8 +29,8 @@ export default function CareersPage() {
         repo, a memo you&rsquo;re proud of.
       </p>
       <p>
-        <a href="mailto:bimalkumal2004@gmail.com?subject=Arthvion%20%E2%80%94%20talent%20pool">
-          bimalkumal2004@gmail.com
+        <a href="mailto:careers@arthvion.com?subject=Arthvion%20%E2%80%94%20talent%20pool">
+          careers@arthvion.com
         </a>
       </p>
     </ContentPage>

@@ -64,7 +64,7 @@ export default function PrivacyPage() {
       <h2>8. Contact</h2>
       <p>
         Questions or requests about your data? Email{" "}
-        <a href="mailto:bimalkumal2004@gmail.com">bimalkumal2004@gmail.com</a>.
+        <a href="mailto:info@arthvion.com">info@arthvion.com</a>.
       </p>
 
       <div className="lp-note">

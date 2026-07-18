@@ -24,7 +24,7 @@ interface Tier {
 }
 
 /** Single source of truth for the sales contact. Update here if it ever changes. */
-const SALES_EMAIL = "bimal@stellanetconnect.com";
+const SALES_EMAIL = "bkumal@arthvion.com";
 const SALES_MAILTO =
   `mailto:${SALES_EMAIL}` +
   `?subject=${encodeURIComponent("Arthvion — Firm plan inquiry")}` +

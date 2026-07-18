@@ -87,7 +87,7 @@ export default function TermsPage() {
       <h2>10. Contact</h2>
       <p>
         Questions about these Terms? Email{" "}
-        <a href="mailto:bimalkumal2004@gmail.com">bimalkumal2004@gmail.com</a>.
+        <a href="mailto:info@arthvion.com">info@arthvion.com</a>.
       </p>
 
       <div className="lp-note">

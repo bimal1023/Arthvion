@@ -42,7 +42,7 @@ export default function AboutPage() {
         We&rsquo;re an early-stage company building toward the diligence layer for serious
         investors — watchlist monitoring, drift alerts, and a private corpus that learns your
         desk&rsquo;s house view. If that&rsquo;s a problem you live with,{" "}
-        <a href="mailto:bimalkumal2004@gmail.com">we&rsquo;d love to hear from you</a>.
+        <a href="mailto:info@arthvion.com">we&rsquo;d love to hear from you</a>.
       </p>
     </ContentPage>
   );

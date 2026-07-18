@@ -30,7 +30,7 @@ class Settings(BaseSettings):
 
     # External APIs
     tavily_api_key: str
-    sec_edgar_user_agent: str = "Arthvion contact@example.com"
+    sec_edgar_user_agent: str = "Arthvion admin@arthvion.com"
     fmp_api_key: str = ""  # Financial Modeling Prep — free tier: 250 req/day
     # FRED (St. Louis Fed macro data) — free key: https://fredaccount.stlouisfed.org/apikey
     fred_api_key: str = ""

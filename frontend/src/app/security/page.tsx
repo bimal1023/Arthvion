@@ -47,8 +47,8 @@ export default function SecurityPage() {
       <h2>Reporting a vulnerability</h2>
       <p>
         Found something? Please email{" "}
-        <a href="mailto:bimalkumal2004@gmail.com?subject=Arthvion%20security%20report">
-          bimalkumal2004@gmail.com
+        <a href="mailto:admin@arthvion.com?subject=Arthvion%20security%20report">
+          admin@arthvion.com
         </a>{" "}
         with the details and we&rsquo;ll respond as quickly as we can. We appreciate responsible
         disclosure.

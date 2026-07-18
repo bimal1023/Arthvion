@@ -24,7 +24,7 @@ const FOOTER_COLUMNS: { title: string; links: [string, string][] }[] = [
     title: "Company",
     links: [
       ["About", "/about"], ["Careers", "/careers"],
-      ["Contact", "mailto:bimalkumal2004@gmail.com"],
+      ["Contact", "mailto:info@arthvion.com"],
     ],
   },
   {
