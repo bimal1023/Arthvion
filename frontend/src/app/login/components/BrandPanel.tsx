@@ -58,12 +58,6 @@ export function BrandPanel() {
         <span style={{ fontSize: 17, fontWeight: 600, letterSpacing: "-0.015em", color: "#fff" }}>
           Arthvion
         </span>
-        <span style={{
-          marginLeft: 4, padding: "2px 8px", borderRadius: 999,
-          fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
-          background: "rgba(90,159,212,0.15)", color: "#9DC8E8",
-          border: "1px solid rgba(90,159,212,0.28)",
-        }}>VANTAGE</span>
       </div>
 
       {/* Hero copy */}
