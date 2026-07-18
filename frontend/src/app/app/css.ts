@@ -597,6 +597,24 @@ export const CSS = `
 }
 .af-app .slide-up { animation:af-slide-up 0.35s ease-out; }
 
+/* ── Mobile nav drawer (slides the full sidebar in from the left) ─────────── */
+.af-app .mnav-backdrop {
+  position:fixed; inset:0; z-index:90;
+  background:rgba(9,30,66,.44); opacity:0; pointer-events:none;
+  transition:opacity .25s ease;
+}
+.af-app .mnav-backdrop.open { opacity:1; pointer-events:auto; }
+.af-app .mnav-drawer {
+  position:fixed; top:0; left:0; bottom:0; z-index:100;
+  width:264px; max-width:84vw;
+  transform:translateX(-100%);
+  transition:transform .28s cubic-bezier(.2,.7,.3,1);
+  box-shadow:0 12px 40px rgba(9,30,66,.28);
+}
+.af-app .mnav-drawer.open { transform:translateX(0); }
+/* The sidebar is display:none at this width — force it visible inside the drawer. */
+.af-app .mnav-drawer .sidebar { display:flex !important; width:100%; height:100%; border-right:none; }
+
 @media (max-width:880px) {
   .af-app .sidebar { display:none; }
   .af-app .content-inner { padding:var(--s-300) var(--s-200) var(--s-600); }

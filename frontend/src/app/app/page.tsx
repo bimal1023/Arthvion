@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, LogOut, X } from "lucide-react";
+import { Search, LogOut, X, Menu, ShieldCheck } from "lucide-react";
 
 import { Logo } from "@/components/Logo";
 import { apiFetch, logout, getToken } from "@/lib/auth";
@@ -63,6 +63,7 @@ export default function DashboardPage() {
   const [docCount, setDocCount] = useState(0);
   const [notifCount, setNotifCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // ── Report-run lifecycle (SSE, polling, agent state) ─────────────────────────
   const run = useReportRun();
@@ -221,6 +222,7 @@ export default function DashboardPage() {
   function handleTabChange(t: NavTab) {
     setActiveTab(t);
     if (t === "new-report") setReport(null);
+    setMobileNavOpen(false); // close the mobile drawer after picking a tab
   }
 
   function handleBack() {
@@ -234,101 +236,9 @@ export default function DashboardPage() {
 
   if (!ready) return null;
 
-  // ── Mobile: drop sidebar, show simple top header ─────────────────────────────
-  if (isMobile) {
-    return (
-      <>
-        <style dangerouslySetInnerHTML={{ __html: CSS }} />
-        <div className="af-app" style={{ flexDirection: "column" }}>
-          <div className="topbar" style={{ padding: "0 16px" }}>
-            <div className="sb-mark" style={{ width: 28, height: 28 }}><Logo variant="onDark" size={18} /></div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: "var(--n900)" }}>Arthvion</div>
-            <div className="tb-spacer" />
-            <button className="tb-icon-btn" onClick={() => setSearchOpen(true)}><Search size={15} /></button>
-            <button className="tb-signout" onClick={handleSignOut}>
-              <LogOut size={14} />
-            </button>
-          </div>
-          <div className="content">
-            <div className="content-inner">
-              {phase === "idle" && activeTab === "new-report" && (
-                <NewReportForm
-                  key={formKey}
-                  onSubmit={handleSubmit}
-                  loading={false}
-                  credits={credits}
-                  planTier={planTier}
-                  initialValues={formInitial}
-                />
-              )}
-              {phase === "generating" && activeReq && (
-                <RunPipeline
-                  req={activeReq} agents={agents} statusMsg={statusMsg}
-                  polling={polling} onAbort={handleAbort}
-                />
-              )}
-              {phase === "loaded" && report && <ReportViewer report={report} />}
-              {error && <div className="err-banner"><X size={14} /> {error}</div>}
-            </div>
-          </div>
-          <SearchModal
-            open={searchOpen}
-            onClose={() => setSearchOpen(false)}
-            onSelect={handleSelectHistorical}
-          />
-        </div>
-      </>
-    );
-  }
-
-  // ── Desktop: full sidebar + topbar ───────────────────────────────────────────
-  return (
+  // Tab content is identical on desktop and mobile — define once, render in both.
+  const tabContent = (
     <>
-      <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      <div className="af-app">
-        <Sidebar
-          activeTab={activeTab}
-          onTabChange={handleTabChange}
-          userName={userName}
-          onSearchOpen={() => setSearchOpen(true)}
-          recentCount={recentCount}
-          liveCount={liveCount}
-          docCount={docCount}
-          watchlistAlertCount={watchlistAlertCount}
-          usagePercent={usagePercent}
-          planTier={planTier}
-          teamMemberCount={teamMemberCount}
-          workspaceRole={workspaceRole}
-          workspaceName={workspaceName}
-        />
-        <div className="main-col">
-          <div style={{ position: "relative" }}>
-            <Topbar
-              activeTab={activeTab}
-              runStatus={runStatus}
-              onBack={handleBack}
-              onSignOut={handleSignOut}
-              onSearchOpen={() => setSearchOpen(true)}
-              onNotifications={() => setNotifOpen((v) => !v)}
-              alertCount={notifCount + watchlistAlertCount}
-              isAdmin={isAdmin}
-            />
-            <NotificationsDropdown
-              open={notifOpen}
-              onClose={() => { setNotifOpen(false); setNotifCount(0); }}
-              onNavigate={(targetType, targetId) => {
-                setNotifOpen(false);
-                if (targetType === "report") {
-                  handleOpenReportById(targetId);
-                } else if (targetType === "deal") {
-                  setActiveTab("pipeline");
-                }
-              }}
-            />
-          </div>
-
-          <div className="content">
-            <div className="content-inner">
               {/* ── New report ── */}
               {activeTab === "new-report" && (
                 <>
@@ -529,6 +439,122 @@ export default function DashboardPage() {
                   <SettingsView planTier={planTier} credits={credits} onRefreshCredits={refreshCredits} />
                 </div>
               )}
+    </>
+  );
+
+  // ── Mobile: hamburger opens a slide-in drawer with the full nav ──────────────
+  if (isMobile) {
+    return (
+      <>
+        <style dangerouslySetInnerHTML={{ __html: CSS }} />
+        <div className="af-app" style={{ flexDirection: "column" }}>
+          <div className="topbar" style={{ padding: "0 12px", gap: 8 }}>
+            <button
+              className="tb-icon-btn"
+              aria-label="Open menu"
+              aria-expanded={mobileNavOpen}
+              onClick={() => setMobileNavOpen(true)}
+            >
+              <Menu size={18} />
+            </button>
+            <div className="sb-mark" style={{ width: 28, height: 28 }}><Logo variant="onDark" size={18} /></div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: "var(--n900)" }}>Arthvion</div>
+            <div className="tb-spacer" />
+            {isAdmin && (
+              <a href="/admin" className="tb-icon-btn" aria-label="Admin console" style={{ color: "var(--b600)" }}>
+                <ShieldCheck size={16} />
+              </a>
+            )}
+            <button className="tb-icon-btn" onClick={() => setSearchOpen(true)} aria-label="Search"><Search size={15} /></button>
+            <button className="tb-signout" onClick={handleSignOut} aria-label="Sign out">
+              <LogOut size={14} />
+            </button>
+          </div>
+
+          {/* Slide-in nav drawer */}
+          <div className={`mnav-backdrop${mobileNavOpen ? " open" : ""}`} onClick={() => setMobileNavOpen(false)} />
+          <div className={`mnav-drawer${mobileNavOpen ? " open" : ""}`}>
+            <Sidebar
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              userName={userName}
+              onSearchOpen={() => { setMobileNavOpen(false); setSearchOpen(true); }}
+              recentCount={recentCount}
+              liveCount={liveCount}
+              docCount={docCount}
+              watchlistAlertCount={watchlistAlertCount}
+              usagePercent={usagePercent}
+              planTier={planTier}
+              teamMemberCount={teamMemberCount}
+              workspaceRole={workspaceRole}
+              workspaceName={workspaceName}
+            />
+          </div>
+
+          <div className="content">
+            <div className="content-inner">
+              {tabContent}
+            </div>
+          </div>
+          <SearchModal
+            open={searchOpen}
+            onClose={() => setSearchOpen(false)}
+            onSelect={handleSelectHistorical}
+          />
+        </div>
+      </>
+    );
+  }
+
+  // ── Desktop: full sidebar + topbar ───────────────────────────────────────────
+  return (
+    <>
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <div className="af-app">
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          userName={userName}
+          onSearchOpen={() => setSearchOpen(true)}
+          recentCount={recentCount}
+          liveCount={liveCount}
+          docCount={docCount}
+          watchlistAlertCount={watchlistAlertCount}
+          usagePercent={usagePercent}
+          planTier={planTier}
+          teamMemberCount={teamMemberCount}
+          workspaceRole={workspaceRole}
+          workspaceName={workspaceName}
+        />
+        <div className="main-col">
+          <div style={{ position: "relative" }}>
+            <Topbar
+              activeTab={activeTab}
+              runStatus={runStatus}
+              onBack={handleBack}
+              onSignOut={handleSignOut}
+              onSearchOpen={() => setSearchOpen(true)}
+              onNotifications={() => setNotifOpen((v) => !v)}
+              alertCount={notifCount + watchlistAlertCount}
+              isAdmin={isAdmin}
+            />
+            <NotificationsDropdown
+              open={notifOpen}
+              onClose={() => { setNotifOpen(false); setNotifCount(0); }}
+              onNavigate={(targetType, targetId) => {
+                setNotifOpen(false);
+                if (targetType === "report") {
+                  handleOpenReportById(targetId);
+                } else if (targetType === "deal") {
+                  setActiveTab("pipeline");
+                }
+              }}
+            />
+          </div>
+
+          <div className="content">
+            <div className="content-inner">
+              {tabContent}
             </div>
           </div>
         </div>
