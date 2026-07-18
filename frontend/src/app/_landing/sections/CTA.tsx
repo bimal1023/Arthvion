@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BookDemo } from "../BookDemo";
 import { IconArrow, IconCheck } from "../icons";
 
 const TRUST_CHIPS = ["No credit card", "3 free runs", "SOC 2 Type II"];
@@ -17,7 +18,7 @@ export function CTA() {
             <Link href="/login" className="btn btn-primary btn-lg">
               Start free <IconArrow />
             </Link>
-            <a href="#" className="btn btn-outline btn-lg">Book a 20-min demo</a>
+            <BookDemo />
           </div>
           <div className="cta-trust" style={{
             display: "flex", alignItems: "center", gap: "var(--s-200)",
