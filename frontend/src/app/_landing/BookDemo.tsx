@@ -67,7 +67,7 @@ export function BookDemo({ className = "btn btn-outline btn-lg" }: { className?:
 
   return (
     <button type="button" className={className} data-cal-link={CAL_LINK}>
-      Book a 20-min demo
+      Book a 30-min demo
     </button>
   );
 }
