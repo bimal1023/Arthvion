@@ -91,7 +91,38 @@ export const CSS = `
 .af-app .sb-brand-sub {
   font-size:11.5px; color:var(--n200); margin-top:2px;
 }
-.af-app .sb-chev { color:var(--n100); flex-shrink:0; }
+.af-app .sb-chev { color:var(--n100); flex-shrink:0; transition:transform .18s ease; }
+.af-app .sb-chev.open { transform:rotate(180deg); }
+
+/* Workspace menu (opens from the brand row) */
+.af-app .sb-brand-wrap { position:relative; }
+.af-app .sb-brand { width:100%; background:transparent; border:none; border-bottom:1px solid var(--n30); text-align:left; font-family:inherit; }
+.af-app .sb-menu {
+  position:absolute; top:calc(100% - 4px); left:var(--s-150); right:var(--s-150); z-index:60;
+  background:var(--n0); border:1px solid var(--n30); border-radius:var(--r-3);
+  box-shadow:var(--e300); padding:var(--s-75);
+  animation:af-slide-up .16s ease-out;
+}
+.af-app .sb-menu-head { padding:var(--s-150) var(--s-100) var(--s-100); }
+.af-app .sb-menu-ws { font-size:13px; font-weight:700; color:var(--n900); line-height:1.2; word-break:break-word; }
+.af-app .sb-menu-meta { display:flex; align-items:center; gap:6px; margin-top:5px; }
+.af-app .sb-menu-plan {
+  font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;
+  padding:2px 7px; border-radius:999px; background:var(--b50); color:var(--b700);
+}
+.af-app .sb-menu-plan.plan-firm { background:var(--p50); color:var(--p700); }
+.af-app .sb-menu-plan.plan-solo { background:var(--n20); color:var(--n300); }
+.af-app .sb-menu-role { font-size:11px; color:var(--n200); text-transform:capitalize; }
+.af-app .sb-menu-divider { height:1px; background:var(--n20); margin:var(--s-75) 0; }
+.af-app .sb-menu-item {
+  display:flex; align-items:center; gap:9px; width:100%;
+  padding:8px var(--s-100); border:none; background:transparent; cursor:pointer;
+  font-family:inherit; font-size:13px; font-weight:500; color:var(--n800);
+  border-radius:var(--r-2); text-align:left; transition:background .12s, color .12s;
+}
+.af-app .sb-menu-item:hover { background:var(--n10); }
+.af-app .sb-menu-item.danger { color:var(--red); }
+.af-app .sb-menu-item.danger:hover { background:var(--red-soft, #FFEDEB); }
 
 .af-app .sb-search-wrap { padding:var(--s-150) var(--s-200); }
 .af-app .sb-search {

@@ -1,13 +1,16 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import {
   Zap, FileText, Activity as ActivityIcon, Star, Mic, BarChart2 as CompsIcon,
   Filter, Layers, Lock,
   Folder, FileCode, Globe2, Users, TrendingUp, Settings as SettingsIcon,
-  Search, ChevronDown, ChevronRight,
+  Search, ChevronDown, ChevronRight, LogOut,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import type { NavTab } from "../types";
+
+const PLAN_LABEL: Record<string, string> = { solo: "Solo", desk: "Desk", firm: "Firm" };
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -27,6 +30,8 @@ interface SidebarProps {
   workspaceRole?: string;
   /** Firm / workspace name shown under the product name. Falls back to a dash while loading. */
   workspaceName?: string;
+  /** Sign the user out — invoked from the workspace menu. */
+  onSignOut?: () => void;
 }
 
 /** Usage badge color by load: calm green, warning yellow, hot red. */
@@ -37,21 +42,74 @@ function usageBadge(pct: number) {
 }
 
 export function Sidebar({
-  activeTab, onTabChange, userName, onSearchOpen, recentCount, liveCount, docCount, watchlistAlertCount, usagePercent, planTier, teamMemberCount, workspaceRole, workspaceName,
+  activeTab, onTabChange, userName, onSearchOpen, recentCount, liveCount, docCount, watchlistAlertCount, usagePercent, planTier, teamMemberCount, workspaceRole, workspaceName, onSignOut,
 }: SidebarProps) {
   const isSolo = planTier === "solo";
   const lockBadge = <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: 5, color: "var(--n300)", flexShrink: 0 }}><Lock size={11} /></span>;
   const initials = userName.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const brandRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    function onDoc(e: MouseEvent) {
+      if (brandRef.current && !brandRef.current.contains(e.target as Node)) setMenuOpen(false);
+    }
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setMenuOpen(false); }
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDoc); document.removeEventListener("keydown", onKey); };
+  }, [menuOpen]);
+
+  const go = (tab: NavTab) => { setMenuOpen(false); onTabChange(tab); };
+
   return (
     <aside className="sidebar">
-      {/* Brand */}
-      <div className="sb-brand">
-        <div className="sb-mark"><Logo variant="onDark" size={24} /></div>
-        <div className="sb-brand-text">
-          <div className="sb-brand-name">Arthvion</div>
-          <div className="sb-brand-sub">{workspaceName?.trim() || "—"}</div>
-        </div>
-        <ChevronRight size={14} className="sb-chev" />
+      {/* Brand — click opens the workspace menu */}
+      <div className="sb-brand-wrap" ref={brandRef}>
+        <button
+          type="button"
+          className="sb-brand"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((o) => !o)}
+        >
+          <div className="sb-mark"><Logo variant="onDark" size={24} /></div>
+          <div className="sb-brand-text">
+            <div className="sb-brand-name">Arthvion</div>
+            <div className="sb-brand-sub">{workspaceName?.trim() || "—"}</div>
+          </div>
+          <ChevronDown size={14} className={`sb-chev${menuOpen ? " open" : ""}`} />
+        </button>
+
+        {menuOpen && (
+          <div className="sb-menu" role="menu">
+            <div className="sb-menu-head">
+              <div className="sb-menu-ws">{workspaceName?.trim() || "Your workspace"}</div>
+              <div className="sb-menu-meta">
+                <span className={`sb-menu-plan plan-${planTier}`}>{PLAN_LABEL[planTier] ?? planTier}</span>
+                {workspaceRole && <span className="sb-menu-role">{workspaceRole}</span>}
+              </div>
+            </div>
+            <button type="button" className="sb-menu-item" role="menuitem" onClick={() => go("settings")}>
+              <SettingsIcon size={14} /> Settings
+            </button>
+            <button type="button" className="sb-menu-item" role="menuitem" onClick={() => go("team")}>
+              <Users size={14} /> Team
+            </button>
+            <button type="button" className="sb-menu-item" role="menuitem" onClick={() => go("usage")}>
+              <TrendingUp size={14} /> Usage &amp; billing
+            </button>
+            {onSignOut && (
+              <>
+                <div className="sb-menu-divider" />
+                <button type="button" className="sb-menu-item danger" role="menuitem" onClick={() => { setMenuOpen(false); onSignOut(); }}>
+                  <LogOut size={14} /> Sign out
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Search */}

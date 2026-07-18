@@ -488,6 +488,7 @@ export default function DashboardPage() {
               teamMemberCount={teamMemberCount}
               workspaceRole={workspaceRole}
               workspaceName={workspaceName}
+              onSignOut={handleSignOut}
             />
           </div>
 
@@ -525,6 +526,7 @@ export default function DashboardPage() {
           teamMemberCount={teamMemberCount}
           workspaceRole={workspaceRole}
           workspaceName={workspaceName}
+          onSignOut={handleSignOut}
         />
         <div className="main-col">
           <div style={{ position: "relative" }}>
