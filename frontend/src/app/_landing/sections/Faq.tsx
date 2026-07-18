@@ -79,7 +79,7 @@ export function Faq() {
         <div className="faq-list">
           {FAQS.map((f, i) => (
             <Reveal key={f.q} delay={Math.min(i * 60, 240)}>
-              <details className="faq-item" {...(i === 0 ? { open: true } : {})}>
+              <details className="faq-item">
                 <summary>
                   {f.q}
                   <span className="faq-q-icon" aria-hidden>
