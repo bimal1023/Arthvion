@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle2, AlertTriangle, ArrowLeft, ArrowRight } from "lucide-react";
 import { setToken } from "@/lib/auth";
+import { LogoLockup } from "@/components/Logo";
 import { CSS } from "../login/css";
 
 /**
@@ -92,6 +93,7 @@ function VerifyEmailFlow() {
     return (
       <div className="lp-login-right">
         <div className="lp-login-form-wrap" style={{ textAlign: "center" }}>
+          <LogoLockup width={190} style={{ margin: "0 auto 28px" }} />
           <Loader />
           <h2 style={{ marginTop: 20, fontSize: 22, fontWeight: 700, color: "var(--ink)" }}>
             Verifying your email&hellip;
@@ -105,6 +107,7 @@ function VerifyEmailFlow() {
     return (
       <div className="lp-login-right">
         <div className="lp-login-form-wrap" style={{ textAlign: "center" }}>
+          <LogoLockup width={190} style={{ margin: "0 auto 28px" }} />
           <div style={iconCircleStyle("var(--green-soft)", "var(--green-ink)")}>
             <CheckCircle2 size={26} />
           </div>
@@ -122,6 +125,7 @@ function VerifyEmailFlow() {
         <ArrowLeft size={14} /> Back to home
       </Link>
       <div className="lp-login-form-wrap" style={{ textAlign: "center" }}>
+        <LogoLockup width={190} style={{ margin: "0 auto 28px" }} />
         <div style={iconCircleStyle("var(--red-soft)", "var(--red-ink)")}>
           <AlertTriangle size={26} />
         </div>

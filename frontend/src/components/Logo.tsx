@@ -1,19 +1,16 @@
 /**
- * Arthvion brand mark — a navy "A" whose crossbar is an electric-blue upward
- * arrow, with a rising data-point line. Hand-built vector so it scales from a
- * 16px favicon to a hero lockup and works as a single-color mark.
+ * Arthvion brand mark — the official "A" logomark (navy triangle with the
+ * electric-blue swoosh), served from /public/brand.
  *
  * Variants:
- *  - "color"  → navy A + blue arrow + white data dots. For light backgrounds.
- *  - "onDark" → white A + bright-blue arrow (no dots). For the blue brand chips
- *               and the dark login panel, where a navy A would disappear.
+ *  - "color"  → full-color navy mark. For light backgrounds.
+ *  - "onDark" → white silhouette of the same mark. For blue brand chips, the
+ *               dark sidebar/login panel, and the footer — where the navy
+ *               mark would disappear.
+ *
+ * Same props as before (size / variant / title) so every call site is
+ * unchanged. For the full wordmark lockup use <LogoLockup> instead.
  */
-
-// Outer "A" triangle with an apex counter (evenodd punches the hole).
-const A_PATH = "M13,89 L50,11 L87,89 Z M40.5,63 L50,41 L59.5,63 Z";
-// Diagonal arrow rising left→right; tail sits inside the A, tip pokes past the
-// right leg so it reads as both the A's crossbar and an upward trend.
-const ARROW_PATH = "M28,79 L66,39 L62,36 L86,28 L79,52 L75,48 L38,88 Z";
 
 interface LogoProps {
   size?: number;
@@ -22,37 +19,39 @@ interface LogoProps {
 }
 
 export function Logo({ size = 24, variant = "color", title = "Arthvion" }: LogoProps) {
-  const onDark = variant === "onDark";
-  const aFill = onDark ? "#FFFFFF" : "#0B1F44";
-  const arrowFill = onDark ? "#3B8AFF" : "#1A6DF0";
-
+  const src = variant === "onDark" ? "/brand/arthvion-mark-white.png" : "/brand/arthvion-mark.png";
   return (
-    <svg
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
       width={size}
       height={size}
-      viewBox="0 0 100 100"
-      fill="none"
-      role="img"
-      aria-label={title}
-      style={{ flexShrink: 0, display: "block" }}
-    >
-      <path d={A_PATH} fill={aFill} fillRule="evenodd" />
-      <path d={ARROW_PATH} fill={arrowFill} />
-      {!onDark && (
-        <g>
-          <polyline
-            points="33,82 49,66 64,50"
-            fill="none"
-            stroke="#FFFFFF"
-            strokeWidth="2.4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <circle cx="33" cy="82" r="4" fill="#FFFFFF" />
-          <circle cx="49" cy="66" r="4" fill="#FFFFFF" />
-          <circle cx="64" cy="50" r="4" fill="#FFFFFF" />
-        </g>
-      )}
-    </svg>
+      alt={title}
+      style={{ flexShrink: 0, display: "block", objectFit: "contain" }}
+    />
+  );
+}
+
+/**
+ * Full logo lockup — mark + "ARTHVION" wordmark + tagline. Use on large,
+ * light-background brand moments (verify-email, auth panels). Transparent PNG.
+ */
+export function LogoLockup({
+  width = 220,
+  title = "Arthvion — AI operating system for private equity",
+  style,
+}: {
+  width?: number;
+  title?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/brand/arthvion-lockup.png"
+      width={width}
+      alt={title}
+      style={{ display: "block", height: "auto", maxWidth: "100%", ...style }}
+    />
   );
 }
