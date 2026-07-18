@@ -144,3 +144,15 @@ export const IconUser = () => (
     <path d="M4 21a8 8 0 0 1 16 0" />
   </svg>
 );
+
+export const IconMenu = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6h18M3 12h18M3 18h18" />
+  </svg>
+);
+
+export const IconClose = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 6 6 18M6 6l12 12" />
+  </svg>
+);

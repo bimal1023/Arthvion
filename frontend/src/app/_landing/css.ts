@@ -138,17 +138,47 @@ export const CSS = `
   color: var(--n200); background: var(--n0); border: 1px solid var(--n30);
   border-radius: var(--r-1); line-height: 1;
 }
+/* Hamburger button — hidden on desktop, shown on mobile */
+.lp-wrap .nav-burger {
+  display: none; margin-left: auto;
+  width: 40px; height: 40px; align-items: center; justify-content: center;
+  background: transparent; border: 1px solid var(--n30); border-radius: var(--r-2);
+  color: var(--n800); cursor: pointer; transition: background .12s, border-color .12s;
+}
+.lp-wrap .nav-burger:hover { background: var(--n20); }
+
+/* Mobile menu panel — collapsed by default, expands under the nav bar */
+.lp-wrap .nav-mobile {
+  display: none; overflow: hidden;
+  max-height: 0; opacity: 0;
+  background: var(--n0); border-bottom: 1px solid var(--n30);
+  transition: max-height .3s cubic-bezier(.2,.7,.3,1), opacity .2s ease;
+}
+.lp-wrap .nav-mobile.open { max-height: 460px; opacity: 1; }
+.lp-wrap .nav-mobile-inner { display: flex; flex-direction: column; padding: var(--s-150) var(--s-300) var(--s-300); gap: 2px; }
+.lp-wrap .nav-mobile-link {
+  display: block; padding: var(--s-200) var(--s-100);
+  font-size: 1rem; font-weight: 500; color: var(--n800);
+  border-bottom: 1px solid var(--n20); text-decoration: none;
+}
+.lp-wrap .nav-mobile-link:hover { color: var(--b600); text-decoration: none; }
+.lp-wrap .nav-mobile-actions { display: flex; flex-direction: column; gap: var(--s-150); margin-top: var(--s-300); }
+.lp-wrap .nav-mobile-actions .btn { width: 100%; height: 44px; }
+
 /* Nav responsive */
 @media (max-width: 900px) {
   .lp-wrap .nav-search { display: none; }
   .lp-wrap .nav-divider, .lp-wrap .nav-product { display: none; }
 }
 @media (max-width: 768px) {
-  .lp-wrap .nav-links a:not(.btn) { display: none; }
-  .lp-wrap .nav-inner { gap: var(--s-150); }
-}
-@media (max-width: 480px) {
-  .lp-wrap .nav-links .btn-subtle { display: none; }
+  .lp-wrap .nav-links { display: none; }
+  .lp-wrap .nav-burger { display: inline-flex; }
+  .lp-wrap .nav-mobile { display: block; }
+  /* Content pages (docs/legal) have no burger — keep the primary CTA visible,
+     drop only the text links + sign-in. */
+  .lp-wrap .nav-compact { display: flex; margin-left: auto; }
+  .lp-wrap .nav-compact .nav-link,
+  .lp-wrap .nav-compact .btn-subtle { display: none; }
 }
 
 /* Buttons */

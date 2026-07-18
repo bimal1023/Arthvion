@@ -58,7 +58,7 @@ export function ContentPage({ title, subtitle, meta, children }: ContentPageProp
               Arthvion
             </Link>
 
-            <div className="nav-links">
+            <div className="nav-links nav-compact">
               <Link href="/#components" className="nav-link">Product</Link>
               <Link href="/#how"        className="nav-link">How it works</Link>
               <Link href="/#pricing"    className="nav-link">Pricing</Link>
