@@ -495,7 +495,9 @@ export const CSS = `
 .lp-wrap .quote-who .role { font-size: var(--fs-xs); color: rgba(255,255,255,.5); display: block; margin-top: 1px; }
 
 /* FAQ accordion (CSS-only, details/summary) */
-.lp-wrap .faq-list { max-width: 760px; display: flex; flex-direction: column; gap: var(--s-150); }
+/* Centered FAQ header + column (item text stays left-aligned for readability) */
+.lp-wrap #faq .section-head { margin-left: auto; margin-right: auto; text-align: center; }
+.lp-wrap .faq-list { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--s-150); }
 .lp-wrap .faq-item { border: 1px solid var(--n30); border-radius: var(--r-3); background: #fff; overflow: hidden; transition: border-color .15s, box-shadow .15s; }
 .lp-wrap .faq-item:hover { border-color: var(--n40); }
 .lp-wrap .faq-item[open] { border-color: var(--b100); box-shadow: var(--e100); }
