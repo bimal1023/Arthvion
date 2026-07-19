@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # Anthropic
     anthropic_api_key: str
     orchestrator_model: str = "claude-opus-4-7"
-    specialist_model: str = "claude-sonnet-4-6"
+    specialist_model: str = "claude-opus-4-8"
     # Lighter model for less complex agents (market + risk) — fewer tokens, same quality
     fast_model: str = "claude-haiku-4-5-20251001"
     # Max retries on 429 / 529 / 5xx before giving up (Anthropic SDK built-in)
