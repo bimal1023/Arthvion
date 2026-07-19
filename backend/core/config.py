@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     # Anthropic
     anthropic_api_key: str
-    orchestrator_model: str = "claude-opus-4-7"
+    orchestrator_model: str = "claude-opus-4-8"
     specialist_model: str = "claude-opus-4-8"
     # Lighter model for less complex agents (market + risk) — fewer tokens, same quality
     fast_model: str = "claude-haiku-4-5-20251001"
