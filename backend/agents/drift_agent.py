@@ -154,7 +154,7 @@ class DriftAgent:
         except (json.JSONDecodeError, ValueError):
             logger.warning("DriftAgent JSON incomplete — running finalize call")
             try:
-                messages.append({"role": "user", "content": "Output ONLY the complete JSON object now. No markdown, no tool calls."})
+                messages.append({"role": "user", "content": "Output ONLY the complete JSON object now, matching the schema. Every required field must be present — in particular a 'confidence_score' number between 0.0 and 1.0 and a non-empty 'citations' array. No markdown, no tool calls."})
                 fr = await self._client.messages.create(
                     model=self._model, max_tokens=4096,
                     system=cached_system(SYSTEM_PROMPT),
@@ -181,7 +181,10 @@ def _quick_json_check(text: str) -> None:
     start = t.find("{")
     if start == -1:
         raise ValueError("no JSON object")
-    json.loads(t[start:])
+    # Validate the full model, not just json.loads: Opus 4.8 can emit valid JSON
+    # that omits a required field. Pydantic ValidationError is a ValueError
+    # subclass, so the caller's except clause catches it.
+    DriftCheckResult.model_validate(json.loads(t[start:]))
 
 
 def _parse_drift_result(text: str, company: str) -> DriftCheckResult:

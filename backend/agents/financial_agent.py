@@ -347,12 +347,21 @@ class FinancialAgent:
                     company_norm,
                 )
 
-        # ── Finalize: force JSON output if loop ended without clean output ──
-        raw_json = _extract_json(final_text) if final_text else ""
-        try:
-            json.loads(raw_json)
-        except (json.JSONDecodeError, ValueError):
-            logger.warning("JSON incomplete after main loop — running finalize call")
+        # ── Finalize: re-run if the loop ended without a schema-valid section.
+        # Gate on full model validation, not just json.loads(): Opus 4.8 sometimes
+        # emits valid JSON that still omits a required field (e.g. confidence_score),
+        # which parses cleanly but fails validation and would otherwise be discarded.
+        def _section_valid(text: str) -> bool:
+            if not text:
+                return False
+            try:
+                FinancialSection.model_validate(json.loads(_extract_json(text)))
+                return True
+            except Exception:
+                return False
+
+        if not _section_valid(final_text):
+            logger.warning("Output missing/invalid after main loop — running finalize call")
             try:
                 # Anthropic requires strictly alternating user/assistant messages.
                 # Two cases need bridging:
@@ -370,6 +379,9 @@ class FinancialAgent:
                     "content": (
                         "You have gathered enough data. "
                         "Now output ONLY the complete JSON object matching the schema. "
+                        "Every required field must be present — in particular include "
+                        '"confidence_score" (a number between 0.0 and 1.0) and a '
+                        'non-empty "citations" array. '
                         "No markdown fences, no commentary, no tool calls."
                     ),
                 })

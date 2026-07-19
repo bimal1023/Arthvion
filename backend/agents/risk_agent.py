@@ -86,7 +86,7 @@ class RiskAgent:
             max_retries=settings.anthropic_max_retries,
             timeout=settings.anthropic_request_timeout,
         )
-        self._model = settings.fast_model
+        self._model = settings.specialist_model
         self._hooks_pre = [InputNormalizationHook(), PolicyEnforcementHook(), AuditLoggingHook()]
         self._hooks_post = [OutputValidationHook(), AuditLoggingHook(), PolicyEnforcementHook()]
 
@@ -160,7 +160,7 @@ class RiskAgent:
         except (json.JSONDecodeError, ValueError):
             logger.warning("RiskAgent JSON incomplete — running finalize call")
             try:
-                messages.append({"role": "user", "content": "Output ONLY the complete JSON object now. No markdown, no tool calls."})
+                messages.append({"role": "user", "content": "Output ONLY the complete JSON object now, matching the schema. Every required field must be present — in particular a 'confidence_score' number between 0.0 and 1.0 and a non-empty 'citations' array. No markdown, no tool calls."})
                 fr = await self._client.messages.create(model=self._model, max_tokens=8192, system=cached_system(SYSTEM_PROMPT), extra_headers=PROMPT_CACHE_HEADERS, messages=messages)
                 for block in fr.content:
                     if block.type == "text":
@@ -175,7 +175,13 @@ class RiskAgent:
 
 
 def _quick_json_check(text: str) -> None:
-    """Raise if text doesn't contain parseable JSON — used to trigger finalize call."""
+    """Raise if text isn't a schema-valid RiskSection — triggers the finalize call.
+
+    Validates the full model (not just json.loads): Opus 4.8 sometimes emits
+    valid JSON that omits a required field like confidence_score, which parses
+    but fails validation. Pydantic's ValidationError is a ValueError subclass,
+    so the caller's existing except clause catches it.
+    """
     if not text:
         raise ValueError("empty")
     t = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.MULTILINE)
@@ -183,7 +189,7 @@ def _quick_json_check(text: str) -> None:
     start = t.find("{")
     if start == -1:
         raise ValueError("no JSON object")
-    json.loads(t[start:])
+    RiskSection.model_validate(json.loads(t[start:]))
 
 
 def _parse_risk_section(text: str, company: str) -> RiskSection:
