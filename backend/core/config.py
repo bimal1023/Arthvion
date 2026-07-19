@@ -71,6 +71,20 @@ class Settings(BaseSettings):
     # Public URL of the frontend, used to build links inside email bodies.
     app_url: str = "http://localhost:3000"
 
+    # ── OAuth / SSO ─────────────────────────────────────────────────────────────
+    # Public base URL of the API (where providers send the OAuth callback).
+    # In prod this is https://api.arthvion.com; locally http://localhost:8000.
+    # Each provider's redirect URI is `${api_base_url}/api/v1/auth/oauth/{provider}/callback`.
+    api_base_url: str = "http://localhost:8000"
+    # Google OAuth client (Google Cloud Console → Credentials → OAuth 2.0 Client).
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    # Microsoft OAuth app (Azure/Entra → App registrations). Tenant "common"
+    # lets both work/school and personal Microsoft accounts sign in.
+    microsoft_client_id: str = ""
+    microsoft_client_secret: str = ""
+    microsoft_tenant: str = "common"
+
     # ── Stripe billing ────────────────────────────────────────────────────────
     # Test keys start with `sk_test_...`. Live keys start with `sk_live_...`.
     # Never commit live keys; never log them.

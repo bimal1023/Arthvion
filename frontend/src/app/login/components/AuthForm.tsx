@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, Lock, ArrowRight, ArrowLeft, Eye, EyeOff, CheckCircle2, User as UserIcon, Building2 } from "lucide-react";
@@ -9,10 +9,11 @@ import { GoogleIcon, SSOIcon } from "../icons";
 import { Field, InputWrapper, inputCss } from "./Field";
 
 type Mode = "login" | "register" | "forgot";
+type Provider = "google" | "microsoft";
 
-const SSO_PROVIDERS: { label: string; Icon: React.FC }[] = [
-  { label: "Continue with Google", Icon: GoogleIcon },
-  { label: "Continue with Microsoft SSO", Icon: SSOIcon },
+const SSO_PROVIDERS: { provider: Provider; label: string; Icon: React.FC }[] = [
+  { provider: "google", label: "Continue with Google", Icon: GoogleIcon },
+  { provider: "microsoft", label: "Continue with Microsoft", Icon: SSOIcon },
 ];
 
 /**
@@ -29,6 +30,9 @@ export function AuthForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get("next");
+  // Which SSO providers the backend has credentials for (drives button visibility).
+  const [ssoProviders, setSsoProviders] = useState<Record<Provider, boolean>>({ google: false, microsoft: false });
+  const [ssoBusy, setSsoBusy] = useState<Provider | null>(null);
   const [mode, setMode]         = useState<Mode>("login");
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
@@ -50,6 +54,36 @@ export function AuthForm() {
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
 
+  // Discover which SSO providers are configured, and surface any error the
+  // OAuth callback bounced back with (e.g. cancelled / expired link).
+  useEffect(() => {
+    fetch("/api/v1/auth/oauth/providers")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => { if (data) setSsoProviders(data); })
+      .catch(() => {});
+    const cbErr = searchParams.get("error");
+    if (cbErr) setError(decodeURIComponent(cbErr));
+  }, [searchParams]);
+
+  async function startSso(provider: Provider) {
+    setError(null);
+    setSsoBusy(provider);
+    try {
+      const next = encodeURIComponent(nextUrl || "/app");
+      const res = await fetch(`/api/v1/auth/oauth/${provider}/login?next=${next}`);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.authorize_url) {
+        window.location.href = data.authorize_url; // full-page hop to the provider
+        return;
+      }
+      setError(data.detail ?? "Could not start sign-in. Please try again.");
+    } catch {
+      setError("Network error starting sign-in. Please try again.");
+    } finally {
+      setSsoBusy(null);
+    }
+  }
+
   function switchMode(next: Mode) {
     setMode(next);
     setError(null);
@@ -58,6 +92,8 @@ export function AuthForm() {
     setNeedsVerification(false);
     setResent(false);
   }
+
+  const anySso = ssoProviders.google || ssoProviders.microsoft;
 
   async function resendVerification() {
     setResending(true);
@@ -287,22 +323,25 @@ export function AuthForm() {
           </p>
         </div>
 
-        {/* SSO + divider — hidden in forgot-password mode */}
-        {mode !== "forgot" && (
+        {/* SSO + divider — only shown when a provider is configured, and not in forgot mode */}
+        {mode !== "forgot" && anySso && (
           <>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24 }}>
-              {SSO_PROVIDERS.map(({ label, Icon }) => (
+              {SSO_PROVIDERS.filter((p) => ssoProviders[p.provider]).map(({ provider, label, Icon }) => (
                 <button
-                  key={label}
+                  key={provider}
                   type="button"
+                  onClick={() => startSso(provider)}
+                  disabled={ssoBusy !== null}
                   style={{
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                     width: "100%", height: 44,
                     background: "var(--surface)", color: "var(--ink)",
                     border: "1px solid var(--border-strong)",
-                    borderRadius: 10, cursor: "pointer",
+                    borderRadius: 10, cursor: ssoBusy ? "default" : "pointer",
                     fontSize: 14, fontWeight: 500,
                     boxShadow: "var(--shadow-xs)",
+                    opacity: ssoBusy && ssoBusy !== provider ? 0.5 : 1,
                     transition: "background 0.15s, border-color 0.15s",
                   }}
                   onMouseEnter={(e) => {
@@ -315,7 +354,7 @@ export function AuthForm() {
                   }}
                 >
                   <Icon />
-                  {label}
+                  {ssoBusy === provider ? "Redirecting…" : label}
                 </button>
               ))}
             </div>
