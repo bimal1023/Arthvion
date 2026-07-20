@@ -1,5 +1,5 @@
 import {
-  IconArrow, IconCheck, IconChevronRight, IconEye,
+  IconArrow, IconCheck, IconEye,
   IconFinancial, IconLegal, IconMarket, IconRisk,
 } from "../icons";
 
@@ -30,14 +30,6 @@ export function Hero() {
 
           {/* ── Left: copy ── */}
           <div>
-            <span className="hero-eyebrow rise rise-1">
-              <span className="lozenge lozenge-bold-inprog">New</span>
-              v4 — agent orchestration is live
-              <span style={{ marginLeft: 4, color: "var(--n100)", display: "inline-flex" }}>
-                <IconChevronRight />
-              </span>
-            </span>
-
             <h1 className="rise rise-2">
               Institutional diligence,<br />
               <span className="serif">on demand.</span>
