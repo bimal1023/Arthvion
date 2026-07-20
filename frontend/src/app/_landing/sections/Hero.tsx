@@ -1,5 +1,5 @@
 import {
-  IconArrow, IconCheck, IconEye,
+  IconArrow, IconEye,
   IconFinancial, IconLegal, IconMarket, IconRisk,
 } from "../icons";
 
@@ -10,12 +10,31 @@ const HERO_META = [
   { num: "SOC 2", label: "Type II · tenant-isolated" },
 ];
 
-const VIZ_AGENTS = [
-  { icon: <IconFinancial size={12} />, name: "Financial" },
-  { icon: <IconRisk size={12} />,      name: "Risk" },
-  { icon: <IconMarket size={12} />,    name: "Market" },
-  { icon: <IconLegal size={12} />,     name: "Legal" },
+/* Section tabs — mirrors the real ReportViewer tab bar (same order, same accents). */
+const VIZ_SECTIONS = [
+  { icon: <IconFinancial size={12} />, name: "Financial", accent: "var(--b500)" },
+  { icon: <IconRisk size={12} />,      name: "Risk",      accent: "var(--y500)" },
+  { icon: <IconMarket size={12} />,    name: "Market",    accent: "var(--g500)" },
+  { icon: <IconLegal size={12} />,     name: "Legal",     accent: "var(--t500)" },
 ];
+
+/* Key-metrics strip — mirrors the real report header's 4-column summary. */
+const VIZ_METRICS = [
+  { label: "Revenue (TTM)", value: "$416.2B", delta: "+8.4%",  tone: "up" as const },
+  { label: "Net Income",    value: "$103.9B", delta: "+12.1%", tone: "up" as const },
+  { label: "Market Share",  value: "23.4%",   delta: "",       tone: "flat" as const },
+  { label: "Active Risks",  value: "7",       delta: "2 high severity", tone: "warn" as const },
+];
+
+/* 270° arc gauge — same sweep as <ScoreGauge>, but opening at the bottom
+   (135°→45°) so it reads as a speedometer at this size. The product gauge
+   opens on the left, which only stays legible at its full 190px with ticks. */
+const GAUGE = {
+  size: 96, vbH: 88, r: 41,
+  path: "M 19.01 76.99 A 41 41 0 1 1 76.99 76.99",
+  arcLen: 193.21,
+  dash: 193.21 * 0.74, // score 7.4 / 10
+};
 
 const LOGO_ROW = [
   "Northbridge Capital", "Sequoia Heritage", "Generation IM",
@@ -78,44 +97,71 @@ export function Hero() {
                 </div>
               </div>
 
-              <div className="viz-body">
-                <div className="viz-score-row">
-                  <div className="viz-score"><span className="viz-score-num tnum">7.4</span></div>
-                  <div className="viz-score-info">
+              {/* Header — meta, title, score gauge (mirrors the report header card) */}
+              <div className="viz-top">
+                <div className="viz-top-main">
+                  <div className="viz-meta">
+                    <span className="viz-pill"><i />Due Diligence Report</span>
+                    <span className="viz-cites">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <ellipse cx="12" cy="5" rx="9" ry="3" />
+                        <path d="M3 5v14a9 3 0 0 0 18 0V5" />
+                        <path d="M3 12a9 3 0 0 0 18 0" />
+                      </svg>
+                      38 citations
+                    </span>
+                    <span className="viz-time">· 2m 47s</span>
+                  </div>
+
+                  <div className="viz-title">
                     <h4>Apple Inc.</h4>
-                    <div className="row">
-                      <span className="ticker">AAPL</span>
-                      <span className="lozenge lozenge-success">Buy</span>
-                      <span style={{ fontSize: 12, color: "var(--n200)" }}>· generated 2m 47s ago</span>
-                    </div>
+                    <span className="viz-ticker">AAPL</span>
                   </div>
                 </div>
 
-                <div className="viz-agents">
-                  {VIZ_AGENTS.map((a) => (
-                    <div className="viz-agent" key={a.name}>
-                      <span className="viz-agent-icon">{a.icon}</span>
-                      <span className="viz-agent-name">{a.name}</span>
-                      <span className="viz-agent-bar"><span style={{ width: "100%" }} /></span>
-                    </div>
-                  ))}
+                <div className="viz-gauge">
+                  <svg width={GAUGE.size} height={GAUGE.vbH} viewBox={`0 0 ${GAUGE.size} ${GAUGE.vbH}`}>
+                    <path d={GAUGE.path} fill="none" stroke="var(--n20)" strokeWidth="10" strokeLinecap="round" />
+                    <path
+                      d={GAUGE.path} fill="none" stroke="var(--g500)" strokeWidth="10" strokeLinecap="round"
+                      strokeDasharray={`${GAUGE.dash} ${GAUGE.arcLen}`}
+                    />
+                    <text x="48" y="50" textAnchor="middle" className="viz-gauge-num">7.4</text>
+                    <text x="48" y="64" textAnchor="middle" className="viz-gauge-cap">OVERALL</text>
+                  </svg>
                 </div>
+              </div>
 
+              {/* Key metrics strip */}
+              <div className="viz-metrics">
+                {VIZ_METRICS.map((m) => (
+                  <div className="viz-metric" key={m.label}>
+                    <span className="viz-metric-label">{m.label}</span>
+                    <span className="viz-metric-val tnum">{m.value}</span>
+                    {m.delta && (
+                      <span className={`viz-metric-delta viz-metric-delta-${m.tone}`}>{m.delta}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Section tabs */}
+              <div className="viz-sections">
+                {VIZ_SECTIONS.map((s, i) => (
+                  <span className={`viz-section${i === 0 ? " active" : ""}`} key={s.name}>
+                    <span style={{ color: s.accent, display: "inline-flex" }}>{s.icon}</span>
+                    {s.name}
+                  </span>
+                ))}
+              </div>
+
+              <div className="viz-body">
                 <div className="viz-finding">
                   <b>Services moat continues to compound:</b> revenue up 16% YoY to $24.2B,
                   now 28% of total revenue<sup>3</sup>. Gross margin expanded 280 bps<sup>4</sup>,
                   offsetting iPhone unit softness in Greater China<sup>11</sup>.
                 </div>
               </div>
-            </div>
-
-            <div className="viz-float viz-float-1">
-              <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--g500)", display: "inline-block" }} />
-              <b style={{ color: "var(--n900)", fontWeight: 600 }}>All 4 agents complete</b>
-            </div>
-            <div className="viz-float viz-float-2">
-              <span style={{ color: "var(--b500)", display: "inline-flex" }}><IconCheck size={13} /></span>
-              <span><b style={{ color: "var(--n900)", fontWeight: 600 }}>38 citations</b> · all traceable</span>
             </div>
           </div>
         </div>
