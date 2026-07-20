@@ -421,9 +421,12 @@ export const CSS = `
 .lp-wrap .doc-eyebrow { font-size: 10px; font-weight: 700; color: var(--b500); letter-spacing: .1em; text-transform: uppercase; margin-bottom: var(--s-100); }
 .lp-wrap .doc-h { margin: 0 0 var(--s-200); font-size: 1.125rem; font-weight: 600; color: var(--n900); letter-spacing: -0.01em; }
 .lp-wrap .doc-p { margin: 0 0 var(--s-150); font-size: 14px; line-height: 1.65; color: var(--n400); }
-.lp-wrap .doc-p sup { color: var(--b600); font-weight: 600; font-family: 'JetBrains Mono',monospace; font-size: 10px; background: var(--b50); padding: 1px 4px; border-radius: var(--r-1); border: 1px solid var(--b75); margin-left: 2px; cursor: pointer; }
+.lp-wrap .doc-p sup { color: var(--b600); font-weight: 600; font-family: 'JetBrains Mono',monospace; font-size: 10px; background: var(--b50); padding: 1px 4px; border-radius: var(--r-1); border: 1px solid var(--b75); margin-left: 2px; }
 .lp-wrap .doc-callout { display: flex; gap: var(--s-150); padding: var(--s-200); background: var(--b50); border-radius: var(--r-2); border-left: 3px solid var(--b500); font-size: 13px; margin: var(--s-150) 0; }
 .lp-wrap .doc-callout b { color: var(--n900); font-weight: 600; }
+/* Source references inside the mock memo — look like the product's citation
+   links but are intentionally inert (the figures are illustrative). */
+.lp-wrap .doc-link { color: var(--b600); font-weight: 500; }
 .lp-wrap .doc-table { width: 100%; border-collapse: collapse; margin-top: var(--s-150); font-size: 13px; }
 .lp-wrap .doc-table th, .lp-wrap .doc-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--n30); }
 .lp-wrap .doc-table th { background: var(--n10); font-weight: 600; color: var(--n300); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }

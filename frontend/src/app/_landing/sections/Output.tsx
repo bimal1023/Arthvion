@@ -102,8 +102,8 @@ export function Output() {
                 <IconInfo />
                 <div>
                   <b>Source trace:</b> The 16.3% YoY services figure reconciles to{" "}
-                  <a href="#">10-Q § Item 1</a>, and is corroborated by the{" "}
-                  <a href="#">FY24 Q3 earnings transcript</a>.
+                  <span className="doc-link">10-Q § Item 1</span>, and is corroborated by the{" "}
+                  <span className="doc-link">FY24 Q3 earnings transcript</span>.
                 </div>
               </div>
               <table className="doc-table">
