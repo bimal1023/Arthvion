@@ -364,10 +364,6 @@ export const CSS = `
 .lp-wrap .output-grid { display: grid; grid-template-columns: .85fr 1fr; gap: var(--s-600); align-items: start; margin-top: var(--s-400); }
 @media (max-width: 1024px) { .lp-wrap .output-grid { grid-template-columns: 1fr; } }
 .lp-wrap .output-side { /* natural flow — the right card is the sticky element */ }
-.lp-wrap .output-tabs { display: flex; gap: var(--s-50); margin-bottom: var(--s-300); border-bottom: 2px solid var(--n30); }
-.lp-wrap .output-tab { display: inline-flex; align-items: center; gap: 6px; padding: var(--s-150) 0; margin-right: var(--s-300); background: transparent; border: none; font-size: var(--fs-small); font-weight: 500; color: var(--n300); border-bottom: 2px solid transparent; margin-bottom: -2px; cursor: pointer; transition: color .12s, border-color .12s; }
-.lp-wrap .output-tab.active { color: var(--b500); border-bottom-color: var(--b500); font-weight: 600; }
-.lp-wrap .output-tab:hover:not(.active) { color: var(--n800); }
 .lp-wrap .output-keys { display: flex; flex-direction: column; gap: var(--s-150); margin-top: var(--s-300); }
 .lp-wrap .output-key { display: flex; align-items: flex-start; gap: var(--s-150); padding: var(--s-150); border-radius: var(--r-2); background: transparent; border: 1px solid transparent; }
 .lp-wrap .output-key:hover { background: #fff; border-color: var(--n30); }
@@ -412,6 +408,10 @@ export const CSS = `
 .lp-wrap .doc-risk svg { color: var(--r500); flex-shrink: 0; margin-top: 2px; }
 .lp-wrap .doc-risk b { color: var(--n900); font-weight: 600; }
 .lp-wrap .doc-risk sup { color: var(--b600); font-weight: 600; font-family: 'JetBrains Mono',monospace; font-size: 10px; background: var(--b50); padding: 1px 4px; border-radius: var(--r-1); border: 1px solid var(--b75); margin-left: 2px; }
+
+/* Collapsed continuation sections — header + placeholder bars only */
+.lp-wrap .doc-collapsed .doc-sechead { margin-bottom: var(--s-150); }
+.lp-wrap .doc-skel { display: block; height: 8px; border-radius: 999px; background: var(--n20); margin-bottom: var(--s-100); }
 
 /* Sources chip row — mirrors the CitationFooter */
 .lp-wrap .doc-sources { display: flex; align-items: center; gap: var(--s-100); flex-wrap: wrap; margin-top: var(--s-400); padding: var(--s-150); background: var(--n10); border: 1px solid var(--n30); border-radius: var(--r-2); }

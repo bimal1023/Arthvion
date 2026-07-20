@@ -46,14 +46,8 @@ export function Output() {
 
         <div className="output-grid">
           <aside className="output-side">
-            <div className="output-tabs">
-              {["Memo", "PDF"].map((t) => (
-                <button key={t} className={`output-tab${t === "Memo" ? " active" : ""}`}>
-                  {t}
-                </button>
-              ))}
-            </div>
-            <p style={{ fontSize: "var(--fs-small)", color: "var(--n300)", lineHeight: 1.6, margin: "0 0 var(--s-300)" }}>
+            <span className="eyebrow">Inside every memo</span>
+            <p style={{ fontSize: "var(--fs-small)", color: "var(--n300)", lineHeight: 1.6, margin: "var(--s-150) 0 var(--s-300)" }}>
               The default deliverable, structured like an IC memo: executive summary, financial analysis,
               a severity-weighted risk register, market position, legal exposure — and a defended conviction score.
             </p>
@@ -155,6 +149,24 @@ export function Output() {
                   </div>
                 </div>
               ))}
+            </div>
+
+            {/* §§ 3–4 — collapsed: the full memo continues below the fold */}
+            <div className="doc-section doc-collapsed">
+              <div className="doc-sechead">
+                <span className="doc-secnum" style={{ background: "var(--g500)" }}>3</span>
+                <span className="doc-seclabel">Market &amp; Competitive Landscape</span>
+              </div>
+              <span className="doc-skel" style={{ width: "72%" }} />
+              <span className="doc-skel" style={{ width: "58%" }} />
+            </div>
+            <div className="doc-section doc-collapsed">
+              <div className="doc-sechead">
+                <span className="doc-secnum" style={{ background: "var(--t500)" }}>4</span>
+                <span className="doc-seclabel">Legal &amp; Regulatory Review</span>
+              </div>
+              <span className="doc-skel" style={{ width: "66%" }} />
+              <span className="doc-skel" style={{ width: "44%" }} />
             </div>
 
             {/* Sources — mirrors the CitationFooter chip row */}
