@@ -388,13 +388,36 @@ export const CSS = `
 @media (max-width: 1024px) {
   .lp-wrap .doc { position: static; max-height: none; overflow: visible; }
 }
-.lp-wrap .doc-header { display: flex; align-items: flex-start; justify-content: space-between; padding-bottom: var(--s-300); border-bottom: 1px solid var(--n30); gap: var(--s-300); }
-.lp-wrap .doc-title h3 { margin: 0; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.015em; }
-.lp-wrap .doc-title .sub { display: flex; align-items: center; gap: var(--s-100); margin-top: 4px; font-size: var(--fs-small); color: var(--n200); }
-.lp-wrap .doc-title .ticker { font-family: 'JetBrains Mono',monospace; background: var(--n20); padding: 2px 6px; border-radius: var(--r-1); font-size: 11px; font-weight: 600; color: var(--n400); }
-.lp-wrap .doc-score-mini { display: inline-flex; align-items: center; gap: var(--s-100); padding: 6px 10px; background: var(--g50); border: 1px solid var(--g500); border-radius: var(--r-2); color: var(--g500); font-weight: 700; font-size: var(--fs-small); }
-.lp-wrap .doc-score-mini .num { font-size: 1.125rem; }
+/* Cover strip — mirrors the real print memo's header (heavy bottom rule) */
+.lp-wrap .doc-cover { display: flex; align-items: center; justify-content: space-between; gap: var(--s-300); padding-bottom: var(--s-300); border-bottom: 2px solid var(--n900); }
+.lp-wrap .doc-cover-main { min-width: 0; }
+.lp-wrap .doc-cover-eyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--n200); margin-bottom: 6px; }
+.lp-wrap .doc-cover h3 { margin: 0; font-size: 1.625rem; font-weight: 800; letter-spacing: -0.03em; }
+.lp-wrap .doc-cover .sub { display: flex; align-items: center; gap: var(--s-100); margin-top: 6px; font-size: 12px; color: var(--n200); flex-wrap: wrap; }
+.lp-wrap .doc-cover .ticker { font-family: 'JetBrains Mono',monospace; background: var(--n10); border: 1px solid var(--n30); padding: 2px 7px; border-radius: var(--r-1); font-size: 11px; font-weight: 700; color: var(--n300); letter-spacing: 0.04em; }
 .lp-wrap .doc-section { padding-top: var(--s-400); }
+
+/* Numbered section divider — mirrors the print memo's colored circles */
+.lp-wrap .doc-sechead { display: flex; align-items: center; gap: var(--s-150); margin-bottom: var(--s-200); }
+.lp-wrap .doc-secnum { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 999px; color: #fff; font-family: 'JetBrains Mono',monospace; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+.lp-wrap .doc-seclabel { font-size: 13px; font-weight: 700; color: var(--n900); letter-spacing: -0.01em; flex: 1; }
+.lp-wrap .doc-conf { position: relative; display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 999px; background: var(--b50); color: var(--b700); font-size: 10.5px; font-weight: 600; overflow: hidden; }
+.lp-wrap .doc-conf i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--b75); opacity: .5; }
+
+/* Severity group + risk rows — mirrors the real Risk tab */
+.lp-wrap .doc-sev { display: flex; align-items: center; gap: 8px; margin-bottom: var(--s-100); }
+.lp-wrap .doc-sev-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--r500); }
+.lp-wrap .doc-sev-count { display: inline-flex; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 999px; background: var(--r50); color: var(--r500); font-size: 10px; font-weight: 800; }
+.lp-wrap .doc-risk { display: flex; gap: var(--s-150); align-items: flex-start; padding: var(--s-150); background: var(--n10); border: 1px solid var(--n30); border-radius: var(--r-2); margin-bottom: var(--s-100); font-size: 13px; line-height: 1.55; color: var(--n400); }
+.lp-wrap .doc-risk svg { color: var(--r500); flex-shrink: 0; margin-top: 2px; }
+.lp-wrap .doc-risk b { color: var(--n900); font-weight: 600; }
+.lp-wrap .doc-risk sup { color: var(--b600); font-weight: 600; font-family: 'JetBrains Mono',monospace; font-size: 10px; background: var(--b50); padding: 1px 4px; border-radius: var(--r-1); border: 1px solid var(--b75); margin-left: 2px; }
+
+/* Sources chip row — mirrors the CitationFooter */
+.lp-wrap .doc-sources { display: flex; align-items: center; gap: var(--s-100); flex-wrap: wrap; margin-top: var(--s-400); padding: var(--s-150); background: var(--n10); border: 1px solid var(--n30); border-radius: var(--r-2); }
+.lp-wrap .doc-sources-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--n200); margin-right: 4px; }
+.lp-wrap .doc-source-chip { padding: 3px 9px; background: #fff; border: 1px solid var(--n30); border-radius: var(--r-1); font-size: 11px; color: var(--n400); font-weight: 500; }
+.lp-wrap .doc-sources-more { font-size: 11px; color: var(--n200); font-weight: 500; }
 .lp-wrap .doc-eyebrow { font-size: 10px; font-weight: 700; color: var(--b500); letter-spacing: .1em; text-transform: uppercase; margin-bottom: var(--s-100); }
 .lp-wrap .doc-h { margin: 0 0 var(--s-200); font-size: 1.125rem; font-weight: 600; color: var(--n900); letter-spacing: -0.01em; }
 .lp-wrap .doc-p { margin: 0 0 var(--s-150); font-size: 14px; line-height: 1.65; color: var(--n400); }

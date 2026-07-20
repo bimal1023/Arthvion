@@ -2,6 +2,7 @@ import {
   IconArrow, IconEye,
   IconFinancial, IconLegal, IconMarket, IconRisk,
 } from "../icons";
+import { MiniGauge } from "../MiniGauge";
 
 const HERO_META = [
   { num: "2:47",  label: "Median run time" },
@@ -26,15 +27,6 @@ const VIZ_METRICS = [
   { label: "Active Risks",  value: "7",       delta: "2 high severity", tone: "warn" as const },
 ];
 
-/* 270° arc gauge — same sweep as <ScoreGauge>, but opening at the bottom
-   (135°→45°) so it reads as a speedometer at this size. The product gauge
-   opens on the left, which only stays legible at its full 190px with ticks. */
-const GAUGE = {
-  size: 96, vbH: 88, r: 41,
-  path: "M 19.01 76.99 A 41 41 0 1 1 76.99 76.99",
-  arcLen: 193.21,
-  dash: 193.21 * 0.74, // score 7.4 / 10
-};
 
 const LOGO_ROW = [
   "Northbridge Capital", "Sequoia Heritage", "Generation IM",
@@ -120,15 +112,7 @@ export function Hero() {
                 </div>
 
                 <div className="viz-gauge">
-                  <svg width={GAUGE.size} height={GAUGE.vbH} viewBox={`0 0 ${GAUGE.size} ${GAUGE.vbH}`}>
-                    <path d={GAUGE.path} fill="none" stroke="var(--n20)" strokeWidth="10" strokeLinecap="round" />
-                    <path
-                      d={GAUGE.path} fill="none" stroke="var(--g500)" strokeWidth="10" strokeLinecap="round"
-                      strokeDasharray={`${GAUGE.dash} ${GAUGE.arcLen}`}
-                    />
-                    <text x="48" y="50" textAnchor="middle" className="viz-gauge-num">7.4</text>
-                    <text x="48" y="64" textAnchor="middle" className="viz-gauge-cap">OVERALL</text>
-                  </svg>
+                  <MiniGauge score={7.4} />
                 </div>
               </div>
 

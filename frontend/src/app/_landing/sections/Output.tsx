@@ -1,11 +1,12 @@
 import { IconInfo } from "../icons";
+import { MiniGauge } from "../MiniGauge";
 import { Reveal } from "../Reveal";
 
 const OUTPUT_KEYS = [
   { n: "01", text: <><b>Every claim is citable.</b> Hover any superscript to jump to the source paragraph in the underlying filing.</> },
-  { n: "02", text: <><b>Conviction, not vibes.</b> The 0–10 score is the synthesis agent&rsquo;s calibrated output, with confidence intervals shown on hover.</> },
-  { n: "03", text: <><b>Adversarial review built in.</b> Each finding is cross-checked against the strongest opposing source before it lands in the memo.</> },
-  { n: "04", text: <><b>Exportable.</b> Print to PDF in-app, or download a typed JSON payload for downstream tooling.</> },
+  { n: "02", text: <><b>Conviction, not vibes.</b> The 0–10 score is the synthesis agent&rsquo;s calibrated output, and every section carries its own confidence score.</> },
+  { n: "03", text: <><b>Written by specialists.</b> Financial, risk, market, and legal are each researched by a dedicated agent against its own sources — SEC filings, court dockets, market data.</> },
+  { n: "04", text: <><b>Board-ready export.</b> Print to a formatted PDF in-app — cover page, numbered sections, and full source list included.</> },
 ];
 
 const SEGMENT_ROWS: [string, string, string, string, string, boolean][] = [
@@ -15,6 +16,19 @@ const SEGMENT_ROWS: [string, string, string, string, string, boolean][] = [
   ["iPad",              "28.3",  "25.1",  "−11.3%", "7%",  true],
   ["Wearables & Other", "39.8",  "37.0",  "−7.0%",  "7%",  true],
 ];
+
+const RISK_ROWS = [
+  {
+    title: "DOJ antitrust action targets the App Store model",
+    body: <>Remedy outcomes could compress services margin by 200–400 bps in the bear case<sup>24</sup>.</>,
+  },
+  {
+    title: "Greater China concentration",
+    body: <>Still 17% of revenue<sup>30</sup>; iPhone unit softness only partially offset by services growth<sup>33</sup>.</>,
+  },
+];
+
+const SOURCES = ["10-K FY2024 · Item 1A", "10-Q Q3 · Item 1", "DOJ v. Apple, No. 2:24-cv-04055", "FY24 Q3 earnings call"];
 
 export function Output() {
   return (
@@ -33,14 +47,15 @@ export function Output() {
         <div className="output-grid">
           <aside className="output-side">
             <div className="output-tabs">
-              {["Memo", "PDF", "JSON"].map((t) => (
+              {["Memo", "PDF"].map((t) => (
                 <button key={t} className={`output-tab${t === "Memo" ? " active" : ""}`}>
                   {t}
                 </button>
               ))}
             </div>
             <p style={{ fontSize: "var(--fs-small)", color: "var(--n300)", lineHeight: 1.6, margin: "0 0 var(--s-300)" }}>
-              The default deliverable. Eight pages, structured: thesis, financial picture, risk register, market position, legal exposure, and a defended conviction score.
+              The default deliverable, structured like an IC memo: executive summary, financial analysis,
+              a severity-weighted risk register, market position, legal exposure — and a defended conviction score.
             </p>
             <div className="output-keys">
               {OUTPUT_KEYS.map((k) => (
@@ -53,22 +68,36 @@ export function Output() {
           </aside>
 
           <article className="doc">
-            <div className="doc-header">
-              <div className="doc-title">
+            {/* Cover strip — mirrors the real print memo's header */}
+            <div className="doc-cover">
+              <div className="doc-cover-main">
+                <div className="doc-cover-eyebrow">Due Diligence Investment Memo</div>
                 <h3>Apple Inc.</h3>
                 <div className="sub">
                   <span className="ticker">AAPL</span>
-                  <span>NASDAQ · Large Cap · Consumer Electronics</span>
+                  <span>Generated 20 Jul 2026 · 4 sections · 38 citations</span>
                 </div>
               </div>
-              <div className="doc-score-mini">
-                <span className="num tnum">7.4</span>
-                <span>/ 10 · Buy</span>
-              </div>
+              <MiniGauge score={7.4} size={88} />
             </div>
 
+            {/* Executive summary */}
             <div className="doc-section">
-              <div className="doc-eyebrow">§ 1 · Thesis</div>
+              <div className="doc-eyebrow">Executive Summary</div>
+              <p className="doc-p">
+                Apple presents as a premium compounder: services growth and expanding gross margins
+                offset a maturing iPhone cycle, with best-in-class capital returns. Antitrust remedy
+                risk and Greater China exposure are the two material watch items.
+              </p>
+            </div>
+
+            {/* § 1 · Financial Analysis */}
+            <div className="doc-section">
+              <div className="doc-sechead">
+                <span className="doc-secnum" style={{ background: "var(--b500)" }}>1</span>
+                <span className="doc-seclabel">Financial Analysis</span>
+                <span className="doc-conf"><i style={{ width: "85%" }} />Confidence 0.85</span>
+              </div>
               <h4 className="doc-h">Services moat continues to compound on a healthy hardware base.</h4>
               <p className="doc-p">
                 Apple&apos;s services segment grew 16.3% YoY to $24.2B, now 28% of total revenue<sup>3</sup>,
@@ -78,19 +107,15 @@ export function Output() {
               <div className="doc-callout">
                 <IconInfo />
                 <div>
-                  <b>Cross-check:</b> The 16.3% YoY services figure reconciles to{" "}
+                  <b>Source trace:</b> The 16.3% YoY services figure reconciles to{" "}
                   <a href="#">10-Q § Item 1</a>, and is corroborated by the{" "}
                   <a href="#">FY24 Q3 earnings transcript</a>.
                 </div>
               </div>
-            </div>
-
-            <div className="doc-section">
-              <div className="doc-eyebrow">§ 2 · Segment trajectory</div>
               <table className="doc-table">
                 <thead>
                   <tr>
-                    <th>Segment</th><th>FY23</th><th>FY24E</th>
+                    <th>Segment</th><th>FY23</th><th>FY24</th>
                     <th className="mono">YoY</th><th className="mono">Mix</th>
                   </tr>
                 </thead>
@@ -108,15 +133,37 @@ export function Output() {
               </table>
             </div>
 
+            {/* § 2 · Risk Assessment — severity-grouped, like the real Risk tab */}
             <div className="doc-section">
-              <div className="doc-eyebrow">§ 3 · Key risks</div>
-              <p className="doc-p">
-                Two material risks dominate. <b>Antitrust:</b> the DOJ&apos;s pending action targets the
-                App Store revenue model directly<sup>22</sup>; remedy outcomes could compress services
-                margin by 200–400 bps in the bear case<sup>24</sup>. <b>China concentration:</b> Greater
-                China still represents 17% of revenue<sup>30</sup>, with iPhone unit softness in the region
-                partially offset by services subscription growth<sup>33</sup>.
-              </p>
+              <div className="doc-sechead">
+                <span className="doc-secnum" style={{ background: "var(--y500)" }}>2</span>
+                <span className="doc-seclabel">Risk Assessment</span>
+                <span className="doc-conf"><i style={{ width: "92%" }} />Confidence 0.92</span>
+              </div>
+              <div className="doc-sev">
+                <span className="doc-sev-label">High severity</span>
+                <span className="doc-sev-count">2</span>
+              </div>
+              {RISK_ROWS.map((r) => (
+                <div className="doc-risk" key={r.title}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <path d="M12 9v4" /><path d="M12 17h.01" />
+                  </svg>
+                  <div>
+                    <b>{r.title}.</b> {r.body}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Sources — mirrors the CitationFooter chip row */}
+            <div className="doc-sources">
+              <span className="doc-sources-label">Sources</span>
+              {SOURCES.map((s) => (
+                <span className="doc-source-chip" key={s}>{s}</span>
+              ))}
+              <span className="doc-sources-more">+12 more</span>
             </div>
           </article>
         </div>
