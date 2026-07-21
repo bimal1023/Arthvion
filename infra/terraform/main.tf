@@ -85,6 +85,30 @@ resource "aws_iam_role_policy" "s3_backup_write" {
   })
 }
 
+# ── Bedrock access for the agents (LLM_PROVIDER=bedrock) ───────────────────
+# The "us." inference profiles route a request to whichever of us-east-1/2 or
+# us-west-2 has capacity, so the policy must allow BOTH the profile itself and
+# the underlying foundation models in every region it can land in — a policy
+# naming only the profile fails at invoke time.
+resource "aws_iam_role_policy" "bedrock_invoke" {
+  name = "arthvion-bedrock-invoke"
+  role = aws_iam_role.ec2_backup_role.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream",
+      ]
+      Resource = [
+        "arn:aws:bedrock:*::foundation-model/anthropic.*",
+        "arn:aws:bedrock:*:${data.aws_caller_identity.current.account_id}:inference-profile/us.anthropic.*",
+      ]
+    }]
+  })
+}
+
 resource "aws_iam_instance_profile" "ec2_backup_profile" {
   name = "arthvion-ec2-backup-profile"
   role = aws_iam_role.ec2_backup_role.name
