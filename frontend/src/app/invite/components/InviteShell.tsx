@@ -1,9 +1,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Check, X, Loader2, LogOut, Mail, KeyRound } from "lucide-react";
+import { Check, X, Loader2, LogOut, KeyRound } from "lucide-react";
 
-export type InviteTone = "loading" | "success" | "error" | "warn" | "form" | "email";
+export type InviteTone = "loading" | "success" | "error" | "warn" | "form";
 
 const GRADIENTS: Record<InviteTone, string> = {
   loading: "linear-gradient(135deg, #0C66E4 0%, #08458C 100%)",
@@ -11,7 +11,6 @@ const GRADIENTS: Record<InviteTone, string> = {
   success: "linear-gradient(135deg, #22c55e 0%, #16a34a 100%)",
   warn: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
   error: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
-  email: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
 };
 
 function Icon({ tone }: { tone: InviteTone }) {
@@ -20,7 +19,6 @@ function Icon({ tone }: { tone: InviteTone }) {
   if (tone === "success") return <Check {...p} />;
   if (tone === "warn") return <LogOut {...p} />;
   if (tone === "error") return <X {...p} />;
-  if (tone === "email") return <Mail {...p} />;
   return <KeyRound {...p} />;
 }
 

@@ -25,6 +25,7 @@ from backend.core.config import get_settings
 from backend.core.database import get_session
 from backend.core.rate_limit import limiter
 from backend.models.db import User
+from backend.services.invites import accept_pending_invites
 from backend.services.email import (
     send_password_reset_email,
     send_verification_email,
@@ -177,23 +178,24 @@ async def register(
     return RegisterResponse(email=req.email)
 
 
-@router.post("/invite-signup", response_model=RegisterResponse, status_code=201)
+@router.post("/invite-signup", response_model=TokenResponse, status_code=201)
 @limiter.limit("20/hour")
 async def invite_signup(
     request: Request,
     req: InviteSignupRequest,
     db: AsyncSession = Depends(get_session),
-) -> RegisterResponse:
-    """Create an account directly from a workspace invite.
+) -> TokenResponse:
+    """Create an account directly from a workspace invite and sign them in.
 
-    Lets an invitee go link → set password → verify, instead of being bounced
-    to the signup form to retype the address the invite was already sent to.
-    The email is taken from the invite, never from the request body, so this
-    can't be used to register an arbitrary address.
+    Lets an invitee go link → set password → in, instead of being bounced to
+    the signup form to retype the address the invite was already sent to. The
+    email is taken from the invite, never from the request body, so this can't
+    be used to register an arbitrary address.
 
-    The invite itself is not consumed here — `verify_email` already auto-accepts
-    every pending invite for the address once the account is verified, so the
-    membership lands as part of verification.
+    The account is created **already verified**, and no verification email is
+    sent. Holding a single-use, expiring token that was delivered to that
+    inbox is the same proof of control a verification link provides — asking
+    for a second round-trip to the same mailbox would confirm nothing new.
     """
     from backend.models.db import Workspace, WorkspaceInvite, WorkspaceMember
 
@@ -228,31 +230,33 @@ async def invite_signup(
         email=invite.email,
         hashed_password=hash_password(req.password),
         full_name=(req.full_name or "").strip() or None,
+        is_verified=True,
+        verified_at=datetime.now(timezone.utc),
     )
     db.add(user)
     await db.flush()
 
-    # Give them a personal workspace like /register does. Verification switches
-    # `active_workspace_id` to the inviting workspace, but this guarantees they
-    # still have somewhere to land if the invite is revoked before they verify.
+    # Give them a personal workspace like /register does. accept_pending_invites
+    # then points `active_workspace_id` at the inviting workspace, but this
+    # guarantees they still have somewhere to land if they're later removed.
     ws = Workspace(name=invite.email, slug=str(user.id), plan_tier="solo", memo_credits=3)
     db.add(ws)
     await db.flush()
     db.add(WorkspaceMember(workspace_id=ws.id, user_id=user.id, role="admin"))
     user.active_workspace_id = ws.id
 
+    # Joins this invite plus any others waiting for the same address.
+    await accept_pending_invites(db, user)
     await db.commit()
     await db.refresh(user)
 
-    settings = get_settings()
-    verify_url = f"{settings.app_url}/verify-email?token={create_email_verification_token(user.id)}"
     try:
-        await send_verification_email(to=user.email, verify_url=verify_url)
+        await send_welcome_email(to=user.email)
     except Exception as exc:
-        logger.warning("Verification email failed for invited user %s: %s", user.email, exc)
+        logger.warning("Welcome email failed for invited user %s: %s", user.email, exc)
 
     logger.info("Invite signup for %s (workspace %s)", user.email, invite.workspace_id)
-    return RegisterResponse(email=user.email)
+    return TokenResponse(access_token=create_access_token(user.id))
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -464,42 +468,9 @@ async def verify_email(
     blacklist_token(req.token)
 
     # ── Auto-accept any pending workspace invites for this email ─────────
-    # This handles the case where someone was invited before they had an
-    # account: they register, verify, and land directly in the inviting
-    # workspace — no second step required.
-    from backend.models.db import Workspace, WorkspaceMember, WorkspaceInvite
-
-    pending_invites = (await db.execute(
-        select(WorkspaceInvite).where(
-            WorkspaceInvite.email == user.email,
-            WorkspaceInvite.accepted_at.is_(None),
-            WorkspaceInvite.expires_at > datetime.now(timezone.utc),
-        )
-    )).scalars().all()
-
-    for inv in pending_invites:
-        # Check not already a member
-        existing = (await db.execute(
-            select(WorkspaceMember).where(
-                WorkspaceMember.workspace_id == inv.workspace_id,
-                WorkspaceMember.user_id == user.id,
-            )
-        )).scalar_one_or_none()
-        if existing:
-            inv.accepted_at = datetime.now(timezone.utc)
-            continue
-
-        # Add user to the workspace
-        db.add(WorkspaceMember(
-            workspace_id=inv.workspace_id,
-            user_id=user.id,
-            role=inv.role,
-        ))
-        inv.accepted_at = datetime.now(timezone.utc)
-        # Switch the user's active workspace to the invited one
-        user.active_workspace_id = inv.workspace_id
-
-    if pending_invites:
+    # Covers someone invited before they had an account: they register, verify,
+    # and land directly in the inviting workspace — no second step required.
+    if await accept_pending_invites(db, user):
         await db.commit()
 
     try:

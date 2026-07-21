@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { LogOut } from "lucide-react";
-import { apiFetch, getToken, clearToken } from "@/lib/auth";
+import { apiFetch, getToken, setToken, clearToken } from "@/lib/auth";
 import { InviteShell, primaryBtn } from "./components/InviteShell";
 import { SetPasswordForm } from "./components/SetPasswordForm";
 
@@ -18,7 +18,6 @@ type Lookup = {
 type Phase =
   | "loading"
   | "set-password"   // no account yet → create one inline
-  | "check-email"    // account created, verification sent
   | "success"
   | "wrong-account"
   | "error";
@@ -127,7 +126,12 @@ function InviteContent() {
         setFormError(data?.detail || "Could not create your account.");
         return;
       }
-      setPhase("check-email");
+      // The invite token already proved they control this inbox, so the
+      // account comes back verified with a session — straight into the app.
+      setToken(data.access_token);
+      setPhase("success");
+      setMessage(`You've joined ${invite?.workspace_name || "the workspace"} as ${invite?.role || "a member"}.`);
+      setTimeout(() => router.push("/app"), 1200);
     } catch {
       setFormError("Something went wrong. Please try again.");
     } finally {
@@ -161,26 +165,6 @@ function InviteContent() {
           error={formError}
           onSubmit={createAccount}
         />
-      </InviteShell>
-    );
-  }
-
-  if (phase === "check-email" && invite) {
-    return (
-      <InviteShell
-        tone="email"
-        title="Verify your email"
-        message={
-          <>
-            We sent a verification link to <strong>{invite.email}</strong>. Open it to confirm
-            your account — you&apos;ll be signed in and dropped straight into{" "}
-            <strong>{invite.workspace_name}</strong>.
-          </>
-        }
-      >
-        <p style={{ fontSize: 13, color: "#8590A2", margin: 0 }}>
-          Nothing yet? Check your spam folder.
-        </p>
       </InviteShell>
     );
   }
