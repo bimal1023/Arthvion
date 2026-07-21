@@ -12,11 +12,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-# ── Latest Amazon Linux 2023 arm64 AMI (Graviton) ───────────────────────────
-data "aws_ssm_parameter" "al2023_arm64" {
-  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64"
-}
-
 data "aws_vpc" "default" {
   default = true
 }
@@ -120,12 +115,15 @@ resource "aws_security_group" "app" {
   description = "Arthvion single-box app server"
   vpc_id      = data.aws_vpc.default.id
 
-  ingress {
-    description = "SSH from admin IP only"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.allowed_ssh_cidr]
+  dynamic "ingress" {
+    for_each = var.allowed_ssh_cidrs
+    content {
+      description = ingress.key
+      from_port   = 22
+      to_port     = 22
+      protocol    = "tcp"
+      cidr_blocks = [ingress.value]
+    }
   }
 
   ingress {
@@ -168,7 +166,7 @@ resource "aws_ebs_volume" "data" {
 }
 
 resource "aws_instance" "app" {
-  ami                    = data.aws_ssm_parameter.al2023_arm64.value
+  ami                    = var.ami_id
   instance_type          = var.instance_type
   key_name               = var.key_pair_name
   vpc_security_group_ids = [aws_security_group.app.id]
