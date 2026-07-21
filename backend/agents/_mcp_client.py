@@ -20,6 +20,7 @@ Usage (multi):
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import sys
@@ -74,40 +75,87 @@ class MCPClient:
         )
         self._session: ClientSession | None = None
         self._tools: list[Tool] = []
-        self._cm = None
         self._errlog = None
+        self._task: asyncio.Task | None = None
+        self._ready: asyncio.Event | None = None
+        self._stop: asyncio.Event | None = None
+        self._startup_error: BaseException | None = None
+
+    async def _serve(self) -> None:
+        """Own the session's entire lifecycle inside one task.
+
+        `stdio_client` and `ClientSession` are anyio context managers, and
+        anyio requires a cancel scope be exited by the same task that entered
+        it. Previously both were entered in the caller's task and unwound
+        during that task's cancellation, which raised
+        RuntimeError("Attempted to exit cancel scope in a different task…")
+        and — worse — left a live cancel scope on the task that went on to
+        cancel unrelated awaits later.
+
+        Confining enter and exit to this task makes that structurally
+        impossible. The caller only ever touches `self._session`, whose
+        request/response API is safe to drive across tasks.
+        """
+        try:
+            async with stdio_client(self._params, errlog=self._errlog) as (read, write):
+                async with ClientSession(read, write) as session:
+                    await session.initialize()
+                    self._tools = (await session.list_tools()).tools
+                    self._session = session
+                    self._ready.set()
+                    await self._stop.wait()   # held open until __aexit__
+        except BaseException as e:  # noqa: BLE001 — reported to the caller below
+            self._startup_error = e
+        finally:
+            self._session = None
+            self._ready.set()   # never leave __aenter__ blocked
 
     async def __aenter__(self) -> "MCPClient":
         self._errlog = _devnull_errlog()
-        self._cm = stdio_client(self._params, errlog=self._errlog)
-        read, write = await self._cm.__aenter__()
-        self._session = ClientSession(read, write)
-        await self._session.__aenter__()
-        await self._session.initialize()
-        resp = await self._session.list_tools()
-        self._tools = resp.tools
+        self._ready = asyncio.Event()
+        self._stop = asyncio.Event()
+        self._task = asyncio.create_task(self._serve())
+        await self._ready.wait()
+        if self._session is None:
+            # Spawn failed — reap the task and surface the real cause.
+            await self.__aexit__(None, None, None)
+            raise self._startup_error or RuntimeError(
+                f"MCP server failed to start: {self._params.args}"
+            )
         return self
 
     async def __aexit__(self, *exc: Any) -> None:
-        # Suppress anyio "cancel scope in different task" RuntimeErrors that
-        # surface when Celery's forked worker tears down the event loop while
-        # an exception is still propagating through an anyio task group.
-        try:
-            if self._session:
-                try:
-                    await self._session.__aexit__(*exc)
-                except Exception:
-                    pass
-        finally:
+        """Signal `_serve` to unwind, then wait for it.
+
+        Teardown itself happens inside `_serve` — see its docstring — so the
+        anyio scopes are always exited by the task that entered them. All this
+        does is release the hold and reap the task, which is safe to call from
+        anywhere and safe to call twice.
+        """
+        if self._stop is not None:
+            self._stop.set()
+
+        if self._task is not None:
+            # Shielded: we are usually here *because* the caller was cancelled,
+            # and an unshielded await would be cancelled again immediately,
+            # leaving the subprocess and its pipes dangling. The shield only
+            # protects the wait — the teardown itself still runs inside
+            # `_serve`, i.e. in the task that opened the scopes.
             try:
-                if self._cm:
-                    try:
-                        await self._cm.__aexit__(*exc)
-                    except Exception:
-                        pass
-            finally:
-                if self._errlog:
-                    self._errlog.close()
+                await asyncio.wait_for(asyncio.shield(self._task), timeout=10)
+            except asyncio.TimeoutError:
+                self._task.cancel()
+            except BaseException:  # noqa: BLE001
+                pass
+
+        if self._errlog:
+            try:
+                self._errlog.close()
+            except OSError:
+                pass
+        self._session = None
+        self._task = None
+        self._errlog = None
 
     # ------------------------------------------------------------------
     # Anthropic integration helpers
@@ -172,21 +220,35 @@ class MultiMCPClient:
         self._tool_map: dict[str, MCPClient] = {}  # tool_name → owning client
 
     async def __aenter__(self) -> "MultiMCPClient":
-        for path in self._script_paths:
-            client = MCPClient(path, self._extra_env)
-            await client.__aenter__()
-            for tool in client._tools:
-                if tool.name in self._tool_map:
-                    raise ValueError(
-                        f"Tool name collision: '{tool.name}' is exposed by more than one MCP server"
-                    )
-                self._tool_map[tool.name] = client
-            self._clients.append(client)
+        try:
+            for path in self._script_paths:
+                client = MCPClient(path, self._extra_env)
+                await client.__aenter__()
+                # Appended before the collision check so a raise still unwinds it.
+                self._clients.append(client)
+                for tool in client._tools:
+                    if tool.name in self._tool_map:
+                        raise ValueError(
+                            f"Tool name collision: '{tool.name}' is exposed by more than one MCP server"
+                        )
+                    self._tool_map[tool.name] = client
+        except BaseException:
+            # A server that fails to spawn (or a name collision) previously left
+            # every server opened before it running as an orphaned subprocess.
+            await self.__aexit__(None, None, None)
+            raise
         return self
 
     async def __aexit__(self, *exc: Any) -> None:
+        # Guard each close individually: one server failing to shut down must
+        # not strand the ones after it in the loop.
         for client in reversed(self._clients):
-            await client.__aexit__(*exc)
+            try:
+                await client.__aexit__(*exc)
+            except BaseException as e:  # noqa: BLE001
+                print(f"[mcp] ignoring {type(e).__name__} closing client: {e}", file=sys.stderr)
+        self._clients.clear()
+        self._tool_map.clear()
 
     def anthropic_tools(self) -> list[dict]:
         """Merged Anthropic-format tool list from all connected servers."""
