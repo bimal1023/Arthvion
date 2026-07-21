@@ -25,9 +25,9 @@ import time
 from typing import Any
 from uuid import UUID
 
-import anthropic
 
 from backend.core.config import get_settings
+from backend.core.llm import make_client
 from backend.core.redis_events import publish
 from backend.models.report import DueDiligenceReport, ReportRequest
 
@@ -66,11 +66,7 @@ class Orchestrator:
         workspace_id: str | None = None,
     ) -> None:
         settings = get_settings()
-        self._client = anthropic.AsyncAnthropic(
-            api_key=settings.anthropic_api_key,
-            max_retries=settings.anthropic_max_retries,
-            timeout=settings.anthropic_request_timeout,
-        )
+        self._client = make_client()
         self._model = settings.orchestrator_model
         self._report_id = report_id
         # When set, specialist agents can retrieve this workspace's uploaded

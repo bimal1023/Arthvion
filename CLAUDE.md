@@ -65,6 +65,21 @@ docker compose -f infra/docker-compose.yml up
 
 **Environment:** Copy `infra/.env.example` → `infra/.env` and fill in `ANTHROPIC_API_KEY`, `TAVILY_API_KEY`. `pydantic-settings` loads from `infra/.env` relative to the working directory, so always run from repo root.
 
+### LLM provider (`LLM_PROVIDER`)
+Every Claude client is built in one place — `make_client()` in `backend/core/llm.py`. Never construct `anthropic.AsyncAnthropic` directly; agents and routes call the factory so a provider swap is one env var.
+
+| `LLM_PROVIDER` | Client | Model id shape | Credentials |
+|---|---|---|---|
+| `anthropic` (default) | `AsyncAnthropic` | `claude-opus-4-8` | `ANTHROPIC_API_KEY` |
+| `bedrock` | `AsyncAnthropicBedrock` (InvokeModel) | `us.anthropic.claude-sonnet-4-6` | standard AWS chain + `AWS_REGION` |
+| `bedrock-mantle` | `AsyncAnthropicBedrockMantle` (Messages endpoint) | `anthropic.claude-opus-4-8` | standard AWS chain + `AWS_REGION` |
+
+The three surfaces share the same `.messages.create(...)` API, so agent tool loops, hooks, and JSON parsing are provider-agnostic. Two things do differ and are handled centrally:
+- **Model ids are not portable.** `BEDROCK_{ORCHESTRATOR,SPECIALIST,FAST}_MODEL` override the first-party ids when on Bedrock, and `Settings._resolve_llm_provider` rejects an id whose shape doesn't match the chosen surface (`us.` prefix required for `bedrock`, forbidden for `bedrock-mantle`) so the mismatch fails at startup instead of as a runtime 404.
+- **The prompt-caching beta header is first-party only.** `prompt_cache_headers()` in `backend/agents/_prompt_cache.py` returns `{}` on Bedrock; the `cache_control` block from `cached_system()` is what actually enables caching and works on both.
+
+**Bedrock model access is per-account and must be granted first.** Anthropic models on Bedrock return `404 "Model use case details have not been submitted for this account"` until the Anthropic use-case form is filled out in the Bedrock console (Model access), and current-generation models (Opus 4.7/4.8, Sonnet 5) additionally return `403 "not available for this account"` until requested. Coverage is widest in `us-east-1`; `us-east-2` serves only a subset.
+
 ## Architecture
 
 ### Backend request flow

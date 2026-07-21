@@ -5,13 +5,13 @@ import json
 import logging
 import uuid
 
-import anthropic
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.config import get_settings
+from backend.core.llm import make_client
 from backend.core.database import get_session
 from backend.core.rate_limit import limiter
 from backend.core.workspace import WorkspaceContext, get_workspace_context, require_role
@@ -177,7 +177,7 @@ async def query_documents(
 
     # Step 3: send to Claude for synthesis
     try:
-        client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        client = make_client()
         response = await client.messages.create(
             model=settings.fast_model,
             max_tokens=2048,

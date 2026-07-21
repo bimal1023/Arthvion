@@ -13,10 +13,10 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-import anthropic
 
 from backend.core.config import get_settings
-from backend.agents._prompt_cache import cached_system, PROMPT_CACHE_HEADERS
+from backend.core.llm import make_client
+from backend.agents._prompt_cache import cached_system, prompt_cache_headers
 from backend.hooks.audit_logging import AuditLoggingHook
 from backend.hooks.base import HookContext
 from backend.hooks.input_normalization import InputNormalizationHook
@@ -80,11 +80,7 @@ MAX_ITERATIONS = 4
 class DriftAgent:
     def __init__(self) -> None:
         settings = get_settings()
-        self._client = anthropic.AsyncAnthropic(
-            api_key=settings.anthropic_api_key,
-            max_retries=settings.anthropic_max_retries,
-            timeout=settings.anthropic_request_timeout,
-        )
+        self._client = make_client()
         self._model = settings.fast_model
         self._hooks_pre = [InputNormalizationHook(), PolicyEnforcementHook(), AuditLoggingHook()]
         self._hooks_post = [OutputValidationHook(), AuditLoggingHook(), PolicyEnforcementHook()]
@@ -128,7 +124,7 @@ class DriftAgent:
                     system=cached_system(SYSTEM_PROMPT),
                     tools=tools,
                     messages=messages,
-                    extra_headers=PROMPT_CACHE_HEADERS,
+                    extra_headers=prompt_cache_headers(),
                 )
                 for block in response.content:
                     if block.type == "text":
@@ -158,7 +154,7 @@ class DriftAgent:
                 fr = await self._client.messages.create(
                     model=self._model, max_tokens=4096,
                     system=cached_system(SYSTEM_PROMPT),
-                    extra_headers=PROMPT_CACHE_HEADERS, messages=messages,
+                    extra_headers=prompt_cache_headers(), messages=messages,
                 )
                 for block in fr.content:
                     if block.type == "text":

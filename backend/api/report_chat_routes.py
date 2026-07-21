@@ -15,7 +15,6 @@ import json
 import logging
 from uuid import UUID
 
-import anthropic
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -23,8 +22,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.agents._mcp_client import MCPClient
-from backend.agents._prompt_cache import PROMPT_CACHE_HEADERS, cached_system
+from backend.agents._prompt_cache import prompt_cache_headers, cached_system
 from backend.core.config import get_settings
+from backend.core.llm import make_client
 from backend.core.database import get_session, get_session_factory
 from backend.core.rate_limit import limiter
 from backend.core.workspace import WorkspaceContext, get_workspace_context, require_role
@@ -184,7 +184,7 @@ async def chat_with_report(
     user_uuid = ctx.user.id
     latest_question = messages[-1]["content"]
 
-    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+    client = make_client()
 
     def _sse(payload: dict) -> str:
         return f"data: {json.dumps(payload)}\n\n"
@@ -233,7 +233,7 @@ async def chat_with_report(
                 max_tokens=1500,
                 system=system_block,
                 messages=model_messages,
-                extra_headers=PROMPT_CACHE_HEADERS,
+                extra_headers=prompt_cache_headers(),
             ) as stream:
                 async for text in stream.text_stream:
                     answer_parts.append(text)

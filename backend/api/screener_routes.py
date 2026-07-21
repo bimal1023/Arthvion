@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 import logging
 
-import anthropic
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel
@@ -12,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.auth import get_current_user
 from backend.core.config import get_settings
+from backend.core.llm import make_client
 from backend.core.database import get_session
 from backend.core.rate_limit import limiter
 from backend.models.db import User
@@ -181,7 +181,7 @@ async def screen_stocks(
             filter_desc.append(f"Max cap: ${body.market_cap_max / 1e9:.1f}B")
         filter_str = ", ".join(filter_desc) if filter_desc else "No specific filters"
 
-        client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        client = make_client()
         response = await client.messages.create(
             model=settings.fast_model,
             max_tokens=500,

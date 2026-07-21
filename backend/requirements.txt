@@ -5,8 +5,9 @@ pydantic>=2.10.0
 pydantic-settings>=2.6.0
 email-validator>=2.2.0
 
-# Anthropic
-anthropic>=0.40.0
+# Anthropic — the [bedrock] extra pulls in boto3/botocore for SigV4 auth,
+# needed when LLM_PROVIDER is bedrock or bedrock-mantle.
+anthropic[bedrock]>=0.40.0
 
 # MCP Python SDK
 mcp>=1.0.0

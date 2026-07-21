@@ -11,11 +11,19 @@ The system prompts + tool schemas in every agent exceed these thresholds.
 """
 from __future__ import annotations
 
+from backend.core.llm import on_bedrock
+
 
 def cached_system(prompt: str) -> list[dict]:
     """Wrap a system prompt string for Anthropic prompt caching."""
     return [{"type": "text", "text": prompt, "cache_control": {"type": "ephemeral"}}]
 
 
-# Beta header required to enable prompt caching
-PROMPT_CACHE_HEADERS = {"anthropic-beta": "prompt-caching-2024-07-31"}
+def prompt_cache_headers() -> dict[str, str]:
+    """Extra headers to send alongside a `cached_system(...)` prompt.
+
+    Prompt caching is GA on both surfaces, but Bedrock does not take the
+    Anthropic beta header — the `cache_control` block on the system prompt is
+    enough there, so send nothing extra.
+    """
+    return {} if on_bedrock() else {"anthropic-beta": "prompt-caching-2024-07-31"}

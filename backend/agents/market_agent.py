@@ -12,10 +12,10 @@ import logging
 import re
 from typing import Any
 
-import anthropic
 
 from backend.core.config import get_settings
-from backend.agents._prompt_cache import cached_system, PROMPT_CACHE_HEADERS
+from backend.core.llm import make_client
+from backend.agents._prompt_cache import cached_system, prompt_cache_headers
 from backend.hooks.audit_logging import AuditLoggingHook
 from backend.hooks.base import HookContext
 from backend.hooks.input_normalization import InputNormalizationHook
@@ -82,11 +82,7 @@ MAX_ITERATIONS = 8    # safety cap — most runs converge in 2-4
 class MarketAgent:
     def __init__(self) -> None:
         settings = get_settings()
-        self._client = anthropic.AsyncAnthropic(
-            api_key=settings.anthropic_api_key,
-            max_retries=settings.anthropic_max_retries,
-            timeout=settings.anthropic_request_timeout,
-        )
+        self._client = make_client()
         self._model = settings.specialist_model
         self._hooks_pre = [InputNormalizationHook(), PolicyEnforcementHook(), AuditLoggingHook()]
         self._hooks_post = [OutputValidationHook(), AuditLoggingHook(), PolicyEnforcementHook()]
@@ -135,7 +131,7 @@ class MarketAgent:
                     system=cached_system(SYSTEM_PROMPT),
                     tools=tools,
                     messages=messages,
-                    extra_headers=PROMPT_CACHE_HEADERS,
+                    extra_headers=prompt_cache_headers(),
                 )
                 for block in response.content:
                     if block.type == "text":
@@ -162,7 +158,7 @@ class MarketAgent:
             logger.warning("MarketAgent JSON incomplete — running finalize call")
             try:
                 messages.append({"role": "user", "content": "Output ONLY the complete JSON object now, matching the schema. Every required field must be present — in particular a 'confidence_score' number between 0.0 and 1.0 and a non-empty 'citations' array. No markdown, no tool calls."})
-                fr = await self._client.messages.create(model=self._model, max_tokens=8192, system=cached_system(SYSTEM_PROMPT), extra_headers=PROMPT_CACHE_HEADERS, messages=messages)
+                fr = await self._client.messages.create(model=self._model, max_tokens=8192, system=cached_system(SYSTEM_PROMPT), extra_headers=prompt_cache_headers(), messages=messages)
                 for block in fr.content:
                     if block.type == "text":
                         final_text = block.text; break

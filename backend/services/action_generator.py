@@ -12,9 +12,9 @@ import json
 import logging
 import re
 
-import anthropic
 
 from backend.core.config import get_settings
+from backend.core.llm import make_client
 from backend.models.actions import ActionGenerationResult, GeneratedAction
 
 logger = logging.getLogger(__name__)
@@ -128,11 +128,7 @@ async def generate_actions(report_data: dict) -> list[GeneratedAction]:
     settings = get_settings()
     context = _build_context(report_data)
 
-    client = anthropic.AsyncAnthropic(
-        api_key=settings.anthropic_api_key,
-        max_retries=settings.anthropic_max_retries,
-        timeout=settings.anthropic_request_timeout,
-    )
+    client = make_client()
     response = await client.messages.create(
         model=settings.fast_model,
         max_tokens=2500,

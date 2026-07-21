@@ -10,12 +10,40 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # ── LLM provider ────────────────────────────────────────────────────────
+    # Which surface every Claude call goes through. All three speak the same
+    # Messages API, so only client construction differs (see backend/core/llm.py).
+    #   "anthropic"      → api.anthropic.com          (needs ANTHROPIC_API_KEY)
+    #   "bedrock"        → Bedrock InvokeModel        (needs AWS creds; "us.anthropic.*" ids)
+    #   "bedrock-mantle" → Bedrock Messages endpoint  (needs AWS creds; "anthropic.*" ids)
+    llm_provider: str = "anthropic"
+    # Region for both Bedrock variants. Anthropic model coverage is widest in
+    # us-east-1; us-east-2 serves only a subset.
+    aws_region: str = "us-east-1"
+    # Optional named profile from ~/.aws/credentials. Empty = default AWS
+    # credential chain (env vars → shared profile → instance role).
+    aws_profile: str = ""
+
     # Anthropic
-    anthropic_api_key: str
+    anthropic_api_key: str = ""
     orchestrator_model: str = "claude-opus-4-8"
     specialist_model: str = "claude-opus-4-8"
     # Lighter model for less complex agents (market + risk) — fewer tokens, same quality
     fast_model: str = "claude-haiku-4-5-20251001"
+
+    # Model ids used when llm_provider is a Bedrock variant. Bedrock ids are NOT
+    # interchangeable with first-party ids, and the two Bedrock surfaces disagree
+    # with each other: InvokeModel ("bedrock") wants a cross-region inference
+    # profile — "us.anthropic.claude-sonnet-4-6" — while the Messages endpoint
+    # ("bedrock-mantle") wants the provider-prefixed form —
+    # "anthropic.claude-opus-4-8". Defaults below target the InvokeModel path;
+    # switch them when moving to Mantle. On Bedrock these override the ids above.
+    # Opus 4.5 is the newest Opus this account can reach on Bedrock; 4.7/4.8 and
+    # Sonnet 5 return 403 "not available for this account" and need an AWS Sales
+    # request. Bump these once that lands.
+    bedrock_orchestrator_model: str = "us.anthropic.claude-opus-4-5-20251101-v1:0"
+    bedrock_specialist_model: str = "us.anthropic.claude-opus-4-5-20251101-v1:0"
+    bedrock_fast_model: str = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
     # Max retries on 429 / 529 / 5xx before giving up (Anthropic SDK built-in)
     anthropic_max_retries: int = 8
     # Hard timeout per Anthropic API request (seconds)
@@ -108,6 +136,39 @@ class Settings(BaseSettings):
     # Vercel, Cursor) because per-use API cost makes time-based trials a
     # net-negative on cold signups.
     stripe_trial_days: int = 0
+
+    @model_validator(mode="after")
+    def _resolve_llm_provider(self) -> "Settings":
+        allowed = {"anthropic", "bedrock", "bedrock-mantle"}
+        if self.llm_provider not in allowed:
+            raise ValueError(
+                f"LLM_PROVIDER={self.llm_provider!r} is not one of {sorted(allowed)}"
+            )
+        if self.llm_provider == "anthropic":
+            if not self.anthropic_api_key:
+                raise ValueError("ANTHROPIC_API_KEY is required when LLM_PROVIDER=anthropic")
+        else:
+            # On Bedrock the BEDROCK_* ids are the knob; the first-party ids
+            # would 400 ("The provided model identifier is invalid").
+            self.orchestrator_model = self.bedrock_orchestrator_model
+            self.specialist_model = self.bedrock_specialist_model
+            self.fast_model = self.bedrock_fast_model
+            # Catch the id-shape mismatch at startup rather than as a 400/404 on
+            # the first report run — the two Bedrock surfaces want different ids.
+            wants_profile = self.llm_provider == "bedrock"
+            for field in ("orchestrator_model", "specialist_model", "fast_model"):
+                model = getattr(self, field)
+                if wants_profile and not model.startswith("us."):
+                    raise ValueError(
+                        f"BEDROCK_{field.upper()}={model!r} — LLM_PROVIDER=bedrock needs a "
+                        f"cross-region inference profile id, e.g. 'us.{model}'"
+                    )
+                if not wants_profile and model.startswith("us."):
+                    raise ValueError(
+                        f"BEDROCK_{field.upper()}={model!r} — LLM_PROVIDER=bedrock-mantle needs "
+                        f"the un-prefixed id, e.g. {model[len('us.'):]!r}"
+                    )
+        return self
 
     @model_validator(mode="after")
     def _validate_secret_key(self) -> "Settings":

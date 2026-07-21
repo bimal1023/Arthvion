@@ -34,10 +34,10 @@ import sys
 from datetime import date
 from typing import Any
 
-import anthropic
 
 from backend.core.config import get_settings
-from backend.agents._prompt_cache import cached_system, PROMPT_CACHE_HEADERS
+from backend.core.llm import make_client
+from backend.agents._prompt_cache import cached_system, prompt_cache_headers
 from backend.hooks.base import HookContext
 from backend.hooks.audit_logging import AuditLoggingHook
 from backend.hooks.input_normalization import InputNormalizationHook
@@ -211,14 +211,10 @@ class FinancialAgent:
 
     def __init__(self) -> None:
         settings = get_settings()
-        self._client = anthropic.AsyncAnthropic(
-            api_key=settings.anthropic_api_key,
-            # Global setting (8) causes 60s+ exponential backoff on rate limits.
-            # Keep low: we have a hard timeout anyway, and a fast failure is better
-            # than a long retry spiral that kills the whole agent run.
-            max_retries=2,
-            timeout=settings.anthropic_request_timeout,
-        )
+        # Global setting (8) causes 60s+ exponential backoff on rate limits.
+        # Keep low: we have a hard timeout anyway, and a fast failure is better
+        # than a long retry spiral that kills the whole agent run.
+        self._client = make_client(max_retries=2)
         self._model = settings.specialist_model
 
         self._hooks_pre = [
@@ -300,7 +296,7 @@ class FinancialAgent:
                     system=cached_system(SYSTEM_PROMPT),
                     tools=tools,
                     messages=messages,
-                    extra_headers=PROMPT_CACHE_HEADERS,
+                    extra_headers=prompt_cache_headers(),
                 )
 
                 for block in response.content:
@@ -389,7 +385,7 @@ class FinancialAgent:
                     model=self._model,
                     max_tokens=8192,
                     system=cached_system(SYSTEM_PROMPT),
-                    extra_headers=PROMPT_CACHE_HEADERS,
+                    extra_headers=prompt_cache_headers(),
                     messages=messages,
                 )
                 for block in finalize_resp.content:
