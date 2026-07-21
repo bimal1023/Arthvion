@@ -16,7 +16,9 @@ class Settings(BaseSettings):
     #   "anthropic"      → api.anthropic.com          (needs ANTHROPIC_API_KEY)
     #   "bedrock"        → Bedrock InvokeModel        (needs AWS creds; "us.anthropic.*" ids)
     #   "bedrock-mantle" → Bedrock Messages endpoint  (needs AWS creds; "anthropic.*" ids)
-    llm_provider: str = "anthropic"
+    # Defaults to Bedrock: the deployment runs on AWS with an instance role, so
+    # there is no Anthropic API key anywhere. Set "anthropic" only if you add one.
+    llm_provider: str = "bedrock"
     # Region for both Bedrock variants. Anthropic model coverage is widest in
     # us-east-1; us-east-2 serves only a subset.
     aws_region: str = "us-east-1"
