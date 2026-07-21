@@ -63,6 +63,17 @@ class InviteOut(BaseModel):
     created_at: str
 
 
+class InviteLookupOut(BaseModel):
+    email: str
+    workspace_name: str
+    role: str
+    inviter_name: str | None
+    expires_at: datetime
+    # False → the invitee has no account yet and should set a password inline
+    # rather than being bounced to the signup form.
+    account_exists: bool
+
+
 class AcceptInviteRequest(BaseModel):
     token: str
 
@@ -275,6 +286,49 @@ async def list_invites(
         )
         for inv in invites
     ]
+
+
+@router.get("/invites/lookup", response_model=InviteLookupOut)
+@limiter.limit("30/hour")
+async def lookup_invite(
+    request: Request,
+    token: str,
+    db: AsyncSession = Depends(get_session),
+) -> InviteLookupOut:
+    """Public preview of an invite, so the accept page can render before login.
+
+    Unauthenticated by design: the token was emailed to the invitee and is the
+    only secret involved, so anyone holding it already knows the address it was
+    sent to. `account_exists` tells the frontend whether to offer "set a
+    password" or send them to log in.
+    """
+    invite = (
+        await db.execute(
+            select(WorkspaceInvite).where(WorkspaceInvite.token == token)
+        )
+    ).scalar_one_or_none()
+
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite not found.")
+    if invite.accepted_at is not None:
+        raise HTTPException(status_code=400, detail="This invite has already been accepted.")
+    if invite.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="This invite has expired. Ask the admin to resend.")
+
+    workspace = await db.get(Workspace, invite.workspace_id)
+    inviter = await db.get(User, invite.invited_by) if invite.invited_by else None
+    existing = (
+        await db.execute(select(User).where(func.lower(User.email) == invite.email.lower()))
+    ).scalar_one_or_none()
+
+    return InviteLookupOut(
+        email=invite.email,
+        workspace_name=workspace.name if workspace else "",
+        role=invite.role,
+        inviter_name=(inviter.full_name or inviter.email) if inviter else None,
+        expires_at=invite.expires_at,
+        account_exists=existing is not None,
+    )
 
 
 @router.delete("/invites/{invite_id}", status_code=204)

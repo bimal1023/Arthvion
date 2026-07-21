@@ -68,6 +68,14 @@ class RegisterRequest(BaseModel):
     company_name: str | None = None   # seeds the workspace name; optional
 
 
+class InviteSignupRequest(BaseModel):
+    """Signup driven by a workspace invite — the email comes from the invite,
+    not the caller, so only the password and display name are accepted."""
+    token: str
+    password: str
+    full_name: str | None = None
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
@@ -167,6 +175,84 @@ async def register(
         logger.warning("Verification email failed for %s: %s", user.email, exc)
 
     return RegisterResponse(email=req.email)
+
+
+@router.post("/invite-signup", response_model=RegisterResponse, status_code=201)
+@limiter.limit("20/hour")
+async def invite_signup(
+    request: Request,
+    req: InviteSignupRequest,
+    db: AsyncSession = Depends(get_session),
+) -> RegisterResponse:
+    """Create an account directly from a workspace invite.
+
+    Lets an invitee go link → set password → verify, instead of being bounced
+    to the signup form to retype the address the invite was already sent to.
+    The email is taken from the invite, never from the request body, so this
+    can't be used to register an arbitrary address.
+
+    The invite itself is not consumed here — `verify_email` already auto-accepts
+    every pending invite for the address once the account is verified, so the
+    membership lands as part of verification.
+    """
+    from backend.models.db import Workspace, WorkspaceInvite, WorkspaceMember
+
+    invite = (
+        await db.execute(
+            select(WorkspaceInvite).where(WorkspaceInvite.token == req.token)
+        )
+    ).scalar_one_or_none()
+
+    if not invite:
+        raise HTTPException(status_code=404, detail="Invite not found.")
+    if invite.accepted_at is not None:
+        raise HTTPException(status_code=400, detail="This invite has already been accepted.")
+    if invite.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="This invite has expired. Ask the admin to resend.")
+
+    _validate_password_strength(req.password)
+
+    # Unlike /register, do NOT mask an existing account here. The caller holds
+    # a token emailed to this address, so there's nothing to enumerate — and
+    # silently doing nothing would strand them on a form that appears to work.
+    existing = (
+        await db.execute(select(User).where(User.email == invite.email))
+    ).scalar_one_or_none()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail="An account already exists for this email. Log in to accept the invite.",
+        )
+
+    user = User(
+        email=invite.email,
+        hashed_password=hash_password(req.password),
+        full_name=(req.full_name or "").strip() or None,
+    )
+    db.add(user)
+    await db.flush()
+
+    # Give them a personal workspace like /register does. Verification switches
+    # `active_workspace_id` to the inviting workspace, but this guarantees they
+    # still have somewhere to land if the invite is revoked before they verify.
+    ws = Workspace(name=invite.email, slug=str(user.id), plan_tier="solo", memo_credits=3)
+    db.add(ws)
+    await db.flush()
+    db.add(WorkspaceMember(workspace_id=ws.id, user_id=user.id, role="admin"))
+    user.active_workspace_id = ws.id
+
+    await db.commit()
+    await db.refresh(user)
+
+    settings = get_settings()
+    verify_url = f"{settings.app_url}/verify-email?token={create_email_verification_token(user.id)}"
+    try:
+        await send_verification_email(to=user.email, verify_url=verify_url)
+    except Exception as exc:
+        logger.warning("Verification email failed for invited user %s: %s", user.email, exc)
+
+    logger.info("Invite signup for %s (workspace %s)", user.email, invite.workspace_id)
+    return RegisterResponse(email=user.email)
 
 
 @router.post("/login", response_model=TokenResponse)
