@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -19,6 +20,7 @@ from backend.core.auth import get_current_user
 from backend.core.config import get_settings
 from backend.core.database import get_session
 from backend.core.rate_limit import limiter
+from backend.services.billing import PLAN_CREDITS
 from backend.models.db import (
     CreditLog,
     ReportRecord,
@@ -74,6 +76,27 @@ class AdminOverview(BaseModel):
 class GrantCreditsRequest(BaseModel):
     credits: int = Field(ge=1, le=10_000)
     note: str | None = Field(default=None, max_length=255)
+
+
+class SetPlanRequest(BaseModel):
+    plan_tier: Literal["solo", "desk", "firm"]
+    # None → refill to the tier's standard allowance. Pass an explicit number
+    # to comp a custom amount (Firm is "custom" by design).
+    credits: int | None = Field(default=None, ge=0, le=1_000_000)
+    # A workspace on a live Stripe subscription will have any manual tier change
+    # overwritten by the next subscription webhook. Refuse unless forced.
+    force: bool = False
+    note: str | None = Field(default=None, max_length=255)
+
+
+class SetPlanResponse(BaseModel):
+    detail: str
+    user_id: str
+    email: str
+    workspace_id: str | None
+    plan_tier: str
+    memo_credits: int
+    subscription_status: str | None
 
 
 class CreateVoucherRequest(BaseModel):
@@ -264,6 +287,91 @@ async def grant_credits(
         admin.email, body.credits, user.email, body.note,
     )
     return {"detail": f"Added {body.credits} credits.", "memo_credits": new_balance}
+
+
+@router.post("/users/{user_id}/plan", response_model=SetPlanResponse)
+@limiter.limit("60/hour")
+async def set_plan(
+    request: Request,
+    user_id: str,
+    body: SetPlanRequest,
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_session),
+) -> SetPlanResponse:
+    """Move a user's workspace onto a plan tier without taking payment.
+
+    For comped accounts, design partners, and support fixes. Stripe is never
+    called: the workspace is marked `subscription_status="comped"` so it stays
+    distinguishable from a paying customer — that matters because a comped
+    workspace has no `stripe_customer_id`, so anything that would open the
+    billing portal must not treat it as a live subscription.
+    """
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    ws = await db.get(Workspace, user.active_workspace_id) if user.active_workspace_id else None
+    if not ws:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "User has no active workspace, and plan tier lives on the workspace. "
+                "Use the credits endpoint to top up a legacy account instead."
+            ),
+        )
+
+    # Stripe is the source of truth while a subscription is live — a manual
+    # change here would be silently reverted by the next subscription webhook.
+    if ws.stripe_subscription_id and not body.force:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                f"Workspace has a live Stripe subscription ({ws.subscription_status}). "
+                "A manual tier change will be overwritten by the next Stripe webhook. "
+                "Cancel the subscription first, or resend with force=true."
+            ),
+        )
+
+    old_tier = ws.plan_tier or "solo"
+    old_credits = ws.memo_credits or 0
+
+    new_credits = body.credits if body.credits is not None else PLAN_CREDITS.get(
+        body.plan_tier, PLAN_CREDITS["solo"]
+    )
+
+    ws.plan_tier = body.plan_tier
+    ws.memo_credits = new_credits
+    # Only mark comped when we're not shadowing a real subscription; dropping
+    # to solo clears the marker so the account looks untouched again.
+    if not ws.stripe_subscription_id:
+        ws.subscription_status = "comped" if body.plan_tier != "solo" else None
+
+    delta = new_credits - old_credits
+    if delta:
+        db.add(
+            CreditLog(
+                workspace_id=ws.id,
+                user_id=user.id,
+                action="plan_change",
+                delta=delta,
+            )
+        )
+
+    await db.commit()
+    logger.info(
+        "ADMIN %s set %s (workspace %s) from %s to %s, credits %d -> %d (force=%s, note=%s)",
+        admin.email, user.email, ws.id, old_tier, body.plan_tier,
+        old_credits, new_credits, body.force, body.note,
+    )
+    return SetPlanResponse(
+        detail=f"Plan set to {body.plan_tier} with {new_credits} credits.",
+        user_id=str(user.id),
+        email=user.email,
+        workspace_id=str(ws.id),
+        plan_tier=ws.plan_tier,
+        memo_credits=ws.memo_credits,
+        subscription_status=ws.subscription_status,
+    )
 
 
 # ── Vouchers ──────────────────────────────────────────────────────────────────

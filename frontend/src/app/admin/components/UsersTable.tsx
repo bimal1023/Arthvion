@@ -4,40 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Search, Plus, Loader2, Check, X } from "lucide-react";
 import { apiFetch } from "@/lib/auth";
 import type { AdminUser } from "../types";
-
-const card: React.CSSProperties = {
-  background: "var(--n0)", border: "1px solid var(--n100)",
-  borderRadius: 10, padding: "16px 20px",
-};
-const th: React.CSSProperties = {
-  textAlign: "left", fontSize: 11, fontWeight: 600, color: "var(--n500)",
-  textTransform: "uppercase", letterSpacing: "0.04em",
-  padding: "8px 10px", borderBottom: "1px solid var(--n100)", whiteSpace: "nowrap",
-};
-const td: React.CSSProperties = {
-  fontSize: 13, color: "var(--n800)", padding: "10px",
-  borderBottom: "1px solid var(--n50)", verticalAlign: "middle",
-};
-const planBadge = (tier: string): React.CSSProperties => {
-  const map: Record<string, { bg: string; fg: string }> = {
-    solo: { bg: "var(--n50)", fg: "var(--n600)" },
-    desk: { bg: "var(--b50)", fg: "var(--b700)" },
-    firm: { bg: "var(--p50)", fg: "var(--p700)" },
-  };
-  const c = map[tier] ?? map.solo;
-  return {
-    fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 4,
-    background: c.bg, color: c.fg, textTransform: "capitalize",
-  };
-};
-const input: React.CSSProperties = {
-  padding: "8px 12px", borderRadius: 6, border: "1px solid var(--n200)",
-  fontSize: 13, outline: "none",
-};
-const btn: React.CSSProperties = {
-  display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 12px",
-  borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
-};
+import { card, th, td, input, btn } from "../styles";
+import { PlanCell } from "./PlanCell";
 
 function fmtDate(s: string | null): string {
   if (!s) return "—";
@@ -134,7 +102,16 @@ export function UsersTable() {
                     <div style={{ fontWeight: 600, color: "var(--n900)" }}>{u.email}</div>
                     {u.full_name && <div style={{ fontSize: 12, color: "var(--n400)" }}>{u.full_name}</div>}
                   </td>
-                  <td style={td}><span style={planBadge(u.plan_tier)}>{u.plan_tier}</span></td>
+                  <td style={td}>
+                    <PlanCell
+                      user={u}
+                      onUpdated={(patch) =>
+                        setUsers((prev) =>
+                          prev.map((x) => (x.id === u.id ? { ...x, ...patch } : x)),
+                        )
+                      }
+                    />
+                  </td>
                   <td style={{ ...td, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}>
                     {u.memo_credits >= 999_999 ? "∞" : u.memo_credits}
                   </td>

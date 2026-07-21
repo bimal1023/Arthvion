@@ -307,12 +307,21 @@ Sidebar nav switches `activeTab`: `new-report | memos | live-monitor | watchlist
 
 The SSE handler inside `useReportRun` parses Redis events (`agent_start | agent_done | agent_fail | status | complete | error`), backfills missing events from `/event-log` on reconnect, and polls `/reports/{id}` until completion or 80 attempts (5s→10s→15s ladder).
 
-## Pricing tiers (UI-only — no backend enforcement yet)
+## Pricing tiers
 - **Solo** — Free · 3 memos / month
 - **Desk** — $399 / month · 50 memos / month · Earnings, Comps & Screener (most popular)
 - **Firm** — Custom · everything in Desk + private corpus + SSO + dedicated tenancy
 
-These numbers are currently just marketing copy on `src/app/page.tsx`. The dashboard banner uses `Math.max(0, 3 - recentCount)` to show free runs remaining, but there's no actual gate. **TODO:** add `plan_tier` to `User`, a monthly memo counter, and a 402 response from `create_report` when over cap.
+`plan_tier` and `memo_credits` live on **`Workspace`** (they were moved off `User`; the `User` columns are legacy fallbacks for accounts with no workspace). `PLAN_CREDITS` in `backend/services/billing.py` is the single source of truth for how many memos a tier grants — `firm` is `999_999`, treated as unlimited by the UI.
+
+Enforcement is real: `create_report` in `backend/api/routes.py` returns **402** when `memo_credits <= 0`, then decrements atomically via a conditional `UPDATE … WHERE memo_credits > 0` so concurrent runs can't overdraw. Every movement is written to `CreditLog` (`report_run` / `credit_add` / `subscription_reset` / `plan_change`).
+
+### Comping a plan without payment
+`POST /api/v1/admin/users/{user_id}/plan` (admin-only) moves a user's workspace onto a tier without touching Stripe — for design partners, support fixes, and demos. Body: `{plan_tier, credits?, force?, note?}`; omit `credits` to refill to the tier default.
+
+Comped workspaces get `subscription_status="comped"` rather than `"active"`. That distinction matters: a comped workspace has no `stripe_customer_id`, so anything that opens the billing portal must not mistake it for a live subscription. Downgrading to `solo` clears the marker.
+
+If the workspace already has a `stripe_subscription_id`, the endpoint returns **409** — a manual tier change would be silently reverted by the next subscription webhook. `force: true` overrides and leaves the Stripe status intact. The admin UI (`src/app/admin/components/PlanCell.tsx`) surfaces that conflict as an explicit "Override anyway" action instead of auto-retrying.
 
 ## Key constraints
 - All I/O is `async` — no blocking calls anywhere. MCP tool calls are awaited inside the loop. The four specialist agents run **in parallel** via `asyncio.gather()` in `backend/agents/orchestrator.py` (each catches its own exceptions, so `gather()` never raises on partial failure). This requires an Anthropic Tier 2+ key to avoid 429s. To revert to sequential, replace the `gather()` call with a `for`-loop and raise `agent_inter_delay_seconds` back to 10.
