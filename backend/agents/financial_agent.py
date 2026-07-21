@@ -37,7 +37,11 @@ from typing import Any
 
 from backend.core.config import get_settings
 from backend.core.llm import make_client
-from backend.agents._prompt_cache import cached_system, prompt_cache_headers
+from backend.agents._prompt_cache import (
+    cached_system,
+    prompt_cache_headers,
+    roll_cache_breakpoint,
+)
 from backend.hooks.base import HookContext
 from backend.hooks.audit_logging import AuditLoggingHook
 from backend.hooks.input_normalization import InputNormalizationHook
@@ -335,6 +339,9 @@ class FinancialAgent:
 
                     messages.append({"role": "assistant", "content": response.content})
                     messages.append({"role": "user", "content": tool_results})
+                    # Cache the transcript so the next iteration reads it back
+                    # instead of re-uploading every tool result at full price.
+                    roll_cache_breakpoint(messages)
 
             else:
                 logger.warning(
