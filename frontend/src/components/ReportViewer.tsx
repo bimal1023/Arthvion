@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useIsMobile } from "@/lib/hooks";
 import {
   Printer, BarChart2, ShieldAlert, Globe, Scale,
-  AlertTriangle, ArrowUp, ArrowDown, Database, ListChecks, MessageSquare, Braces, Sparkles,
+  AlertTriangle, ArrowUp, ArrowDown, Database, ListChecks, MessageSquare, Sparkles,
 } from "lucide-react";
 import { ScoreGauge, fmtUSD, fmtPct, fmtSignedPct } from "./ui";
 import type { Report } from "@/lib/types";
@@ -44,21 +44,6 @@ export function ReportViewer({ report }: Props) {
   const isMobile = useIsMobile();
   const [showPrint, setShowPrint]     = useState(false);
   const [activeTab, setActiveTab]     = useState<Tab>("financial");
-
-  /** Download the report as a typed JSON file (client-side — exact in-memory payload). */
-  const handleExportJson = () => {
-    const safe = (report.company || "report")
-      .replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "_").slice(0, 50) || "report";
-    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `arthvion_${safe}_${report.id}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  };
 
   if (report.status === "error") {
     return (
@@ -179,25 +164,6 @@ export function ReportViewer({ report }: Props) {
                   onMouseLeave={(e) => { e.currentTarget.style.background = "var(--ink)"; }}
                 >
                   <Printer size={13} /> Print Report
-                </button>
-              )}
-              {report.status === "complete" && (
-                <button
-                  onClick={handleExportJson}
-                  title="Download the report as typed JSON"
-                  style={{
-                    display: "inline-flex", alignItems: "center", gap: 7,
-                    height: 36, padding: "0 14px",
-                    fontSize: 13, fontWeight: 600,
-                    background: "var(--surface)", color: "var(--ink-2)",
-                    border: "1px solid var(--border-strong)", borderRadius: 9,
-                    cursor: "pointer",
-                    transition: "background 0.15s, border-color 0.15s",
-                  }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "var(--surface-2)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "var(--surface)"; }}
-                >
-                  <Braces size={13} /> Export JSON
                 </button>
               )}
             </div>
