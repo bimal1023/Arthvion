@@ -18,8 +18,8 @@ Enter a company name. Four specialist agents go to work:
 |-------|-------------|--------|
 | **Financial** | SEC EDGAR (10-K/10-Q) + web + your uploaded docs | Revenue, EBITDA, net income, debt, cash, segments, cash-flow, margins, key ratios |
 | **Risk** | SEC EDGAR (Item 1A) + web + your docs | Risk factors ranked by severity (high / medium / low) |
-| **Market** | Web search + your docs | TAM, competitors, growth drivers, headwinds |
-| **Legal** | SEC EDGAR (Item 3) + web + your docs | Active litigation, regulatory actions, potential liabilities |
+| **Market** | Web search + FRED economic data + your docs | TAM, competitors, growth drivers, headwinds |
+| **Legal** | SEC EDGAR (Item 3) + web + CourtListener + OpenSanctions + your docs | Active litigation, regulatory actions, sanctions/PEP exposure, potential liabilities |
 
 An orchestrator model (Claude Opus) synthesizes the four sections into an executive summary with an overall investment score. Every claim links back to its source — an SEC filing accession number, a URL, or an uploaded document. Progress streams to the browser live over SSE.
 
@@ -47,13 +47,13 @@ Browser
   │
   ├─ POST /api/v1/reports ──────────────────► Celery task queue (Redis)
   │                                                    │
-  ├─ GET  /api/v1/reports/{id}/events ◄── SSE ─── Orchestrator (Claude Opus 4.7)
+  ├─ GET  /api/v1/reports/{id}/events ◄── SSE ─── Orchestrator (Claude Opus)
   │        live agent progress                         │
   │                                         ┌──────────┼──────────┬──────────┐
   └─ GET  /api/v1/reports/{id} ◄── JSON     ▼          ▼          ▼          ▼
            final report                Financial    Risk      Market      Legal
                                         Agent       Agent      Agent       Agent
-                                      (Sonnet 4.6 each)
+                                      (Claude Opus each)
                                           │           │          │           │
                                       SEC EDGAR   SEC EDGAR  Web Search  SEC EDGAR
                                        + pgvector RAG (your uploaded docs, workspace-scoped)
@@ -61,6 +61,20 @@ Browser
 ```
 
 Each specialist runs an autonomous tool-use loop — it decides which filings to pull, what to search, and when it has enough to write its section. When the workspace has uploaded documents, a pgvector RAG server is **additionally** bolted onto each agent's MCP client (read-only `similarity_search`, scoped to the workspace server-side) so agents can cite private deal-room files alongside public filings. RAG is best-effort: if it can't spawn, the agent falls back to SEC/web and core analysis never breaks.
+
+The orchestrator and all four specialists run on **Claude Opus**; the drift/watchlist agent runs on **Claude Haiku**.
+
+### Pluggable LLM provider
+
+Every Claude client is built through a single `make_client()` factory (`backend/core/llm.py`), so the model backend swaps with one env var (`LLM_PROVIDER`) and nothing in the agent loops, hooks, or JSON parsing changes:
+
+| `LLM_PROVIDER` | Client | Credentials |
+|---|---|---|
+| `bedrock` (**default**) | `AsyncAnthropicBedrock` (InvokeModel) | standard AWS chain + `AWS_REGION` |
+| `bedrock-mantle` | `AsyncAnthropicBedrockMantle` (Messages endpoint) | standard AWS chain + `AWS_REGION` |
+| `anthropic` | `AsyncAnthropic` | `ANTHROPIC_API_KEY` |
+
+The deployment ships defaulting to **Bedrock** (it runs on AWS with an instance role, so no API key needs to be stored). Model ids are not portable across surfaces — `BEDROCK_{ORCHESTRATOR,SPECIALIST,FAST}_MODEL` override the first-party ids on Bedrock, and config validation rejects a mismatched id shape at startup rather than as a runtime 404. Prompt-caching's beta header is first-party only; the `cache_control` block used everywhere works on both.
 
 ### Hook lifecycle
 
@@ -83,8 +97,8 @@ The frontend opens an SSE stream right after submitting a report. Redis pub/sub 
 **Backend**
 - [FastAPI](https://fastapi.tiangolo.com/) — async REST API
 - [Celery](https://docs.celeryq.dev/) + Redis — task queue (worker) and periodic scans (beat)
-- [Anthropic Python SDK](https://github.com/anthropics/anthropic-sdk-python) — Claude agents with tool use + prompt caching
-- [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) — stdio tool servers (SEC EDGAR, web search, file ingest, pgvector RAG, earnings)
+- [Anthropic Python SDK](https://github.com/anthropics/anthropic-sdk-python) — Claude agents with tool use + prompt caching; pluggable across the Anthropic API and AWS Bedrock
+- [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) — stdio tool servers (SEC EDGAR, web search, file ingest, pgvector RAG, earnings, FRED, CourtListener, OpenSanctions)
 - [SQLAlchemy 2 async](https://docs.sqlalchemy.org/en/20/) + PostgreSQL with [pgvector](https://github.com/pgvector/pgvector) — persistence + embeddings
 - [sentence-transformers](https://www.sbert.net/) — CPU embeddings for RAG
 - [Stripe](https://stripe.com/) — subscriptions + one-time credit top-ups
@@ -107,9 +121,10 @@ The frontend opens an SSE stream right after submitting a report. Redis pub/sub 
 - Python 3.12+
 - Node.js 20+
 - Docker (for Postgres + Redis)
-- [Anthropic API key](https://console.anthropic.com/)
+- LLM access — **AWS credentials with Bedrock model access** (the default `LLM_PROVIDER=bedrock`), or an [Anthropic API key](https://console.anthropic.com/) if you set `LLM_PROVIDER=anthropic`
 - [Tavily API key](https://tavily.com/) (web search)
 - *(optional)* [Financial Modeling Prep API key](https://site.financialmodelingprep.com/) — required for Comps, Screener, and Earnings (free tier: 250 req/day)
+- *(optional)* [FRED](https://fred.stlouisfed.org/docs/api/api_key.html), [CourtListener](https://www.courtlistener.com/help/api/rest/), [OpenSanctions](https://www.opensanctions.org/api/) keys — these data sources degrade gracefully without them
 - *(optional)* Stripe keys for billing, Resend key for transactional email
 
 ### 1. Clone and install
@@ -131,13 +146,23 @@ cp infra/.env.example infra/.env
 Open `infra/.env` and fill in at least:
 
 ```env
-ANTHROPIC_API_KEY=sk-ant-...
+# LLM backend — defaults to Bedrock (uses the standard AWS credential chain).
+# Set LLM_PROVIDER=anthropic to use the Anthropic API with an ANTHROPIC_API_KEY instead.
+LLM_PROVIDER=bedrock
+AWS_REGION=us-east-1
+# ANTHROPIC_API_KEY=sk-ant-...   # only required when LLM_PROVIDER=anthropic
+
 TAVILY_API_KEY=tvly-...
 SEC_EDGAR_USER_AGENT="Your Name your@email.com"   # SEC requires a real contact
 SECRET_KEY=<python -c "import secrets; print(secrets.token_hex(32))">
 
 # Optional — enable the analyst surfaces
 FMP_API_KEY=...            # Comps / Screener / Earnings
+
+# Optional — extra Legal/Market data sources (degrade gracefully if unset)
+FRED_API_KEY=...
+COURTLISTENER_API_TOKEN=...
+OPENSANCTIONS_API_KEY=...
 
 # Optional — billing & email
 STRIPE_SECRET_KEY=sk_...
@@ -255,7 +280,7 @@ arthvion/
 │   │   ├── actions_routes.py      ├── watchlist_routes.py  ├── team_routes.py
 │   │   ├── billing_routes.py      ├── comments_routes.py   ├── activity_routes.py
 │   │   └── notifications_routes.py
-│   ├── core/                      # config, auth (JWT), database, celery_app,
+│   ├── core/                      # config, auth (JWT), database, celery_app, llm (client factory),
 │   │   │                          # redis events, workspace context, rate limit
 │   ├── hooks/                     # pre/post agent middleware (HookContext chain)
 │   ├── models/                    # Pydantic report schemas + SQLAlchemy ORM models
@@ -263,6 +288,7 @@ arthvion/
 │   └── tasks/                     # report_task.py, watchlist_tasks.py (Celery)
 ├── mcp_servers/
 │   ├── sec_edgar/   web_search/   file_ingest/   pgvector_rag/   earnings/
+│   ├── fred/        courtlistener/  opensanctions/
 ├── frontend/
 │   └── src/
 │       ├── app/                   # App Router: / (landing), /app (dashboard), /login
