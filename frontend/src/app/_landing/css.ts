@@ -305,6 +305,17 @@ export const CSS = `
 .lp-wrap .viz-section.active { background: var(--n10); color: var(--n900); }
 .lp-wrap .viz-finding { padding: var(--s-200); background: var(--b50); border: 1px solid var(--b75); border-radius: var(--r-2); font-size: var(--fs-small); color: var(--n800); line-height: 1.55; }
 .lp-wrap .viz-finding sup { color: var(--b600); font-weight: 600; font-family: 'JetBrains Mono',monospace; font-size: 10px; background: #fff; padding: 1px 4px; border-radius: var(--r-1); border: 1px solid var(--b75); margin-left: 2px; }
+
+/* Ask panel preview — grounded Q&A over the memo */
+.lp-wrap .viz-ask { margin-top: var(--s-200); display: flex; flex-direction: column; gap: var(--s-100); }
+.lp-wrap .viz-ask-q { align-self: flex-end; max-width: 82%; background: var(--n800); color: #fff; font-size: var(--fs-small); line-height: 1.45; padding: 8px 12px; border-radius: 12px 12px 3px 12px; }
+.lp-wrap .viz-ask-a { align-self: flex-start; max-width: 92%; background: #fff; border: 1px solid var(--n30); border-radius: 12px 12px 12px 3px; padding: 10px 12px; box-shadow: var(--e100); }
+.lp-wrap .viz-ask-a p { margin: 6px 0 0; font-size: var(--fs-small); color: var(--n800); line-height: 1.55; }
+.lp-wrap .viz-ask-a sup { color: var(--b600); font-weight: 600; font-family: 'JetBrains Mono',monospace; font-size: 10px; background: var(--b50); padding: 1px 4px; border-radius: var(--r-1); border: 1px solid var(--b75); margin-left: 2px; }
+.lp-wrap .viz-ask-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--b600); }
+.lp-wrap .viz-ask-input { margin-top: var(--s-50); display: flex; align-items: center; justify-content: space-between; gap: var(--s-100); border: 1px solid var(--n30); border-radius: 999px; padding: 6px 6px 6px 14px; color: var(--n200); font-size: var(--fs-small); }
+.lp-wrap .viz-ask-input button { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: var(--b500); color: #fff; border: none; flex-shrink: 0; cursor: default; }
+
 @media (max-width: 640px) {
   .lp-wrap .viz-top { flex-direction: column-reverse; align-items: flex-start; }
   .lp-wrap .viz-gauge { padding-left: 0; border-left: none; }

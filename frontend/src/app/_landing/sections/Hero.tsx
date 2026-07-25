@@ -11,12 +11,29 @@ const HERO_META = [
   { num: "SOC 2", label: "Type II · tenant-isolated" },
 ];
 
+/* Inline sparkles — mirrors the real Ask tab's lucide `Sparkles` icon. */
+const IconSpark = ({ size = 12 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+    <path d="M20 3v4" /><path d="M22 5h-4" /><path d="M4 17v2" /><path d="M5 18H3" />
+  </svg>
+);
+
+/* Inline speech bubble — mirrors the real Discussion tab's lucide `MessageSquare`. */
+const IconDiscussion = ({ size = 12 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
 /* Section tabs — mirrors the real ReportViewer tab bar (same order, same accents). */
 const VIZ_SECTIONS = [
-  { icon: <IconFinancial size={12} />, name: "Financial", accent: "var(--b500)" },
-  { icon: <IconRisk size={12} />,      name: "Risk",      accent: "var(--y500)" },
-  { icon: <IconMarket size={12} />,    name: "Market",    accent: "var(--g500)" },
-  { icon: <IconLegal size={12} />,     name: "Legal",     accent: "var(--t500)" },
+  { icon: <IconFinancial size={12} />,  name: "Financial",  accent: "var(--b500)" },
+  { icon: <IconRisk size={12} />,       name: "Risk",       accent: "var(--y500)" },
+  { icon: <IconMarket size={12} />,     name: "Market",     accent: "var(--g500)" },
+  { icon: <IconLegal size={12} />,      name: "Legal",      accent: "var(--t500)" },
+  { icon: <IconSpark size={12} />,      name: "Ask",        accent: "var(--b600)" },
+  { icon: <IconDiscussion size={12} />, name: "Discussion", accent: "var(--t500)" },
 ];
 
 /* Key-metrics strip — mirrors the real report header's 4-column summary. */
@@ -144,6 +161,28 @@ export function Hero() {
                   <b>Services moat continues to compound:</b> revenue up 16% YoY to $24.2B,
                   now 28% of total revenue<sup>3</sup>. Gross margin expanded 280 bps<sup>4</sup>,
                   offsetting iPhone unit softness in Greater China<sup>11</sup>.
+                </div>
+
+                {/* Ask panel preview — grounded Q&A over the memo, mirrors the real Ask tab */}
+                <div className="viz-ask">
+                  <div className="viz-ask-q">What&rsquo;s the bull case and the bear case?</div>
+                  <div className="viz-ask-a">
+                    <span className="viz-ask-badge"><IconSpark size={11} /> Grounded in this memo</span>
+                    <p>
+                      <b>Bull:</b> Services is now 28% of revenue at a 71% gross margin<sup>4</sup> —
+                      a durable annuity that cushions hardware cyclicality.{" "}
+                      <b>Bear:</b> Greater China unit softness<sup>11</sup> plus 7 active risks
+                      (2 high-severity) concentrate the downside.
+                    </p>
+                  </div>
+                  <div className="viz-ask-input">
+                    <span>Ask anything about this memo&hellip;</span>
+                    <button aria-hidden="true" tabIndex={-1}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
