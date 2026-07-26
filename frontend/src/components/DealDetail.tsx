@@ -167,26 +167,28 @@ export function DealDetail({
           </button>
         </div>
 
-        {/* Linked memo */}
-        {ready && deal.report_id && (
-          <button type="button" onClick={() => onOpenReport?.(deal.report_id!)} style={{
-            display: "inline-flex", alignItems: "center", gap: 6, margin: "var(--s-150) var(--s-250) 0",
-            fontSize: 12, fontWeight: 700, color: "var(--g600)", background: "var(--g50)",
-            border: "1px solid var(--g100)", borderRadius: "var(--r-2)", padding: "7px 10px", cursor: "pointer",
-          }}>
-            <FileText size={13} /> Open deep dive report <ArrowUpRight size={12} />
-          </button>
-        )}
+        {/* Scrollable body — linked memo + AI screen + activity all scroll together */}
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {/* Linked memo */}
+          {ready && deal.report_id && (
+            <button type="button" onClick={() => onOpenReport?.(deal.report_id!)} style={{
+              display: "inline-flex", alignItems: "center", gap: 6, margin: "var(--s-150) var(--s-250) 0",
+              fontSize: 12, fontWeight: 700, color: "var(--g600)", background: "var(--g50)",
+              border: "1px solid var(--g100)", borderRadius: "var(--r-2)", padding: "7px 10px", cursor: "pointer",
+            }}>
+              <FileText size={13} /> Open deep dive report <ArrowUpRight size={12} />
+            </button>
+          )}
 
-        {/* AI screen — go/no-go grounded in the deal record */}
-        <ScreeningPanel dealId={deal.id} />
+          {/* AI screen — go/no-go grounded in the deal record */}
+          <ScreeningPanel dealId={deal.id} />
 
-        {/* Activity timeline */}
-        <div style={{ flex: 1, overflowY: "auto", padding: "var(--s-200) var(--s-250)" }}>
-          <div style={{
-            fontSize: 10, fontWeight: 700, color: "var(--n400)", textTransform: "uppercase",
-            letterSpacing: "0.05em", marginBottom: "var(--s-150)",
-          }}>Activity</div>
+          {/* Activity timeline */}
+          <div style={{ padding: "var(--s-200) var(--s-250)" }}>
+            <div style={{
+              fontSize: 10, fontWeight: 700, color: "var(--n400)", textTransform: "uppercase",
+              letterSpacing: "0.05em", marginBottom: "var(--s-150)",
+            }}>Activity</div>
 
           {loading ? (
             <div style={{ padding: 24, display: "flex", justifyContent: "center" }}><Spinner /></div>
@@ -240,6 +242,7 @@ export function DealDetail({
               })}
             </div>
           )}
+          </div>
         </div>
 
         {/* Composer */}
