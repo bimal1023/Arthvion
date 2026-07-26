@@ -544,6 +544,57 @@ class Deal(Base):
     report: Mapped["ReportRecord | None"] = relationship()
 
 
+class Interaction(Base):
+    """A CRM activity logged against a deal — a note, call, meeting, or task.
+
+    Forms the deal's activity timeline. Tasks (kind="task") additionally use
+    `due_at` and `completed_at` to drive reminders and completion state.
+    Cascades when the parent deal is deleted. `contact_id` is intentionally
+    omitted until the Contact model lands; interactions are deal-scoped for now.
+    """
+    __tablename__ = "interactions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    deal_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("deals.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # "note" | "call" | "email" | "meeting" | "task"
+    kind: Mapped[str] = mapped_column(String(10), nullable=False, default="note")
+    body: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    # When the interaction happened (defaults to creation time for notes).
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    # Task-only: when the task is due / when it was completed.
+    due_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    user: Mapped["User"] = relationship()
+
+
 # ── Comments & Collaboration ────────────────────────────────────────────────
 
 class Comment(Base):
