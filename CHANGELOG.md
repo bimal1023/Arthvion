@@ -15,6 +15,13 @@ The current version lives in [`VERSION`](VERSION) and is mirrored in
 
 ## [Unreleased]
 
+### Added
+- Deal CRM (first slice): a deal detail drawer with an activity timeline —
+  log notes, calls, emails, meetings, and tasks against a pipeline deal, with
+  task due dates and completion toggles. New `Interaction` model + endpoints
+  (`/deals/{id}/interactions`, `/interactions/{id}`) and `DealDetail` drawer
+  opened from a pipeline card.
+
 ## [0.1.0] - 2026-07-25
 
 Initial versioned baseline of the multi-agent PE due diligence platform.

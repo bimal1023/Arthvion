@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/auth";
 import { Spinner, fmtUSD } from "./ui";
+import { DealDetail } from "./DealDetail";
 import type { Deal, PipelineStage, DealConviction, ReportSummary } from "@/lib/types";
 
 /* ── Stage metadata ─────────────────────────────────────────── */
@@ -50,6 +51,9 @@ export function PipelineView({ onOpenReport }: { onOpenReport?: (reportId: strin
   const [confirmDeal, setConfirmDeal] = useState<Deal | null>(null);
   const [launching, setLaunching] = useState(false);
   const [deepDiveError, setDeepDiveError] = useState("");
+
+  // Deal detail drawer (CRM activity timeline).
+  const [detailDeal, setDetailDeal] = useState<Deal | null>(null);
 
   // Add-form fields
   const [company, setCompany] = useState("");
@@ -318,6 +322,7 @@ export function PipelineView({ onOpenReport }: { onOpenReport?: (reportId: strin
                     onRemove={removeDeal}
                     onDeepDive={setConfirmDeal}
                     onOpenReport={onOpenReport}
+                    onOpenDetail={setDetailDeal}
                   />
                 ))}
               </div>
@@ -334,6 +339,15 @@ export function PipelineView({ onOpenReport }: { onOpenReport?: (reportId: strin
           error={deepDiveError}
           onConfirm={() => runDeepDive(confirmDeal)}
           onClose={() => { if (!launching) { setConfirmDeal(null); setDeepDiveError(""); } }}
+        />
+      )}
+
+      {/* ── Deal detail drawer ────────────────────────────── */}
+      {detailDeal && (
+        <DealDetail
+          deal={detailDeal}
+          onClose={() => setDetailDeal(null)}
+          onOpenReport={onOpenReport}
         />
       )}
     </div>
@@ -471,7 +485,7 @@ function StatCard({ label, value, tone }: { label: string; value: string; tone?:
 }
 
 function DealCard({
-  deal, reports, onMove, onRemove, onDeepDive, onOpenReport,
+  deal, reports, onMove, onRemove, onDeepDive, onOpenReport, onOpenDetail,
 }: {
   deal: Deal;
   reports: ReportSummary[];
@@ -479,6 +493,7 @@ function DealCard({
   onRemove: (id: string) => void;
   onDeepDive: (deal: Deal) => void;
   onOpenReport?: (reportId: string) => void;
+  onOpenDetail: (deal: Deal) => void;
 }) {
   const conv = deal.conviction ? CONVICTION[deal.conviction] : null;
   const linked = deal.report_id && reports.some((r) => r.id === deal.report_id);
@@ -491,7 +506,11 @@ function DealCard({
     }}>
       {/* Title row */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: "var(--s-75)" }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          onClick={() => onOpenDetail(deal)}
+          title="Open deal"
+          style={{ flex: 1, minWidth: 0, cursor: "pointer" }}
+        >
           <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: "var(--n900)" }}>{deal.company}</span>
             {deal.ticker && (

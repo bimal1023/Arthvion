@@ -13,12 +13,16 @@ from backend.core.activity import log_activity
 from backend.core.database import get_session
 from backend.core.rate_limit import limiter
 from backend.core.workspace import WorkspaceContext, get_workspace_context, require_role
-from backend.models.db import Deal, ReportRecord, Workspace
+from backend.models.db import Deal, Interaction, ReportRecord, User, Workspace
 from backend.models.deals import (
     CreateDealRequest,
+    CreateInteractionRequest,
     DealOut,
+    InteractionOut,
     UpdateDealRequest,
+    UpdateInteractionRequest,
     VALID_CONVICTION,
+    VALID_INTERACTION_KINDS,
     VALID_STAGES,
 )
 
@@ -349,4 +353,129 @@ async def delete_deal(
         summary=f"{ctx.user.full_name or ctx.user.email} removed {company} from the pipeline",
         details={"deal_id": str(deal_id), "company": company},
     )
+    await db.commit()
+
+
+# ── CRM interactions (deal activity timeline) ─────────────────────────────────
+
+def _parse_dt(value: str | None) -> datetime | None:
+    """Parse an ISO 8601 string (accepting a trailing 'Z') to an aware datetime."""
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        raise HTTPException(400, "Invalid datetime — expected ISO 8601.")
+
+
+def _interaction_out(i: Interaction, actor_name: str) -> InteractionOut:
+    return InteractionOut(
+        id=str(i.id),
+        deal_id=str(i.deal_id),
+        kind=i.kind,
+        body=i.body or "",
+        actor_name=actor_name,
+        occurred_at=i.occurred_at.isoformat() if i.occurred_at else "",
+        due_at=i.due_at.isoformat() if i.due_at else None,
+        completed_at=i.completed_at.isoformat() if i.completed_at else None,
+        created_at=i.created_at.isoformat() if i.created_at else "",
+    )
+
+
+async def _get_owned_deal(deal_id: UUID, ctx: WorkspaceContext, db: AsyncSession) -> Deal:
+    row = await db.get(Deal, deal_id)
+    if row is None or row.workspace_id != ctx.workspace.id:
+        raise HTTPException(404, "Deal not found")
+    return row
+
+
+@router.get("/deals/{deal_id}/interactions")
+async def list_interactions(
+    deal_id: UUID,
+    ctx: WorkspaceContext = Depends(get_workspace_context),
+    db: AsyncSession = Depends(get_session),
+) -> list[InteractionOut]:
+    await _get_owned_deal(deal_id, ctx, db)
+    result = await db.execute(
+        select(Interaction, User.full_name, User.email)
+        .join(User, Interaction.user_id == User.id)
+        .where(Interaction.deal_id == deal_id)
+        .order_by(Interaction.occurred_at.desc())
+    )
+    return [
+        _interaction_out(i, full_name or email)
+        for i, full_name, email in result.all()
+    ]
+
+
+@router.post("/deals/{deal_id}/interactions", status_code=201)
+async def create_interaction(
+    deal_id: UUID,
+    body: CreateInteractionRequest,
+    ctx: WorkspaceContext = Depends(require_role("admin", "analyst")),
+    db: AsyncSession = Depends(get_session),
+) -> InteractionOut:
+    await _get_owned_deal(deal_id, ctx, db)
+
+    kind = (body.kind or "note").strip().lower()
+    if kind not in VALID_INTERACTION_KINDS:
+        raise HTTPException(400, f"Invalid kind. Valid: {sorted(VALID_INTERACTION_KINDS)}")
+
+    text = (body.body or "").strip()
+    if not text:
+        raise HTTPException(400, "Interaction body is required.")
+
+    row = Interaction(
+        user_id=ctx.user.id,
+        workspace_id=ctx.workspace.id,
+        deal_id=deal_id,
+        kind=kind,
+        body=text,
+        due_at=_parse_dt(body.due_at) if kind == "task" else None,
+    )
+    db.add(row)
+    await db.commit()
+    await db.refresh(row)
+    return _interaction_out(row, ctx.user.full_name or ctx.user.email)
+
+
+@router.patch("/interactions/{interaction_id}")
+async def update_interaction(
+    interaction_id: UUID,
+    body: UpdateInteractionRequest,
+    ctx: WorkspaceContext = Depends(require_role("admin", "analyst")),
+    db: AsyncSession = Depends(get_session),
+) -> InteractionOut:
+    row = await db.get(Interaction, interaction_id)
+    if row is None or row.workspace_id != ctx.workspace.id:
+        raise HTTPException(404, "Interaction not found")
+
+    if body.body is not None:
+        text = body.body.strip()
+        if not text:
+            raise HTTPException(400, "Interaction body cannot be empty.")
+        row.body = text
+    if body.due_at is not None:
+        row.due_at = _parse_dt(body.due_at)
+    if body.completed is not None:
+        row.completed_at = datetime.now(timezone.utc) if body.completed else None
+
+    await db.commit()
+    await db.refresh(row)
+
+    actor = await db.get(User, row.user_id)
+    actor_name = (actor.full_name or actor.email) if actor else ""
+    return _interaction_out(row, actor_name)
+
+
+@router.delete("/interactions/{interaction_id}", status_code=204)
+async def delete_interaction(
+    interaction_id: UUID,
+    ctx: WorkspaceContext = Depends(require_role("admin", "analyst")),
+    db: AsyncSession = Depends(get_session),
+) -> None:
+    row = await db.get(Interaction, interaction_id)
+    if row is None or row.workspace_id != ctx.workspace.id:
+        raise HTTPException(404, "Interaction not found")
+    await db.delete(row)
     await db.commit()

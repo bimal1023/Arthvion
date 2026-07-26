@@ -307,6 +307,23 @@ export interface Deal {
   updated_at: string;
 }
 
+// ── CRM interactions (deal activity timeline) ─────────────────────────────────
+
+export type InteractionKind = "note" | "call" | "email" | "meeting" | "task";
+
+export interface Interaction {
+  id: string;
+  deal_id: string;
+  kind: InteractionKind;
+  body: string;
+  actor_name: string;
+  occurred_at: string;
+  /** Task-only. */
+  due_at?: string | null;
+  completed_at?: string | null;
+  created_at: string;
+}
+
 // ── Collaboration types ─────────────────────────────────────────────────────
 
 export interface CommentItem {

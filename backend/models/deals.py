@@ -3,6 +3,10 @@ from __future__ import annotations
 
 from pydantic import BaseModel
 
+# CRM activity kinds logged against a deal (the deal's activity timeline).
+INTERACTION_KINDS: list[str] = ["note", "call", "email", "meeting", "task"]
+VALID_INTERACTION_KINDS = set(INTERACTION_KINDS)
+
 # Ordered funnel. The first five are active stages; the last two are terminal.
 PIPELINE_STAGES: list[str] = [
     "sourced",
@@ -55,3 +59,31 @@ class DealOut(BaseModel):
     stage_updated_at: str
     created_at: str
     updated_at: str
+
+
+# ── CRM interactions (deal activity timeline) ─────────────────────────────────
+
+class CreateInteractionRequest(BaseModel):
+    kind: str = "note"
+    body: str = ""
+    # ISO 8601; task-only. When set on kind="task" it drives the due indicator.
+    due_at: str | None = None
+
+
+class UpdateInteractionRequest(BaseModel):
+    body: str | None = None
+    due_at: str | None = None
+    # Toggle a task's completion. True → stamp completed_at; False → clear it.
+    completed: bool | None = None
+
+
+class InteractionOut(BaseModel):
+    id: str
+    deal_id: str
+    kind: str
+    body: str
+    actor_name: str
+    occurred_at: str
+    due_at: str | None = None
+    completed_at: str | None = None
+    created_at: str
