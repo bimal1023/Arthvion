@@ -15,6 +15,11 @@ The current version lives in [`VERSION`](VERSION) and is mirrored in
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-26
+
+AI-native deal CRM: the pipeline gains a relationship + workflow layer that
+feeds the agents.
+
 ### Added
 - Deal CRM (first slice): a deal detail drawer with an activity timeline —
   log notes, calls, emails, meetings, and tasks against a pipeline deal, with
@@ -49,5 +54,6 @@ Initial versioned baseline of the multi-agent PE due diligence platform.
 - Live SSE report progress with event-log replay and polling fallback.
 - PDF/print report export.
 
-[Unreleased]: https://github.com/bimal1023/auditforge/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/bimal1023/auditforge/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/bimal1023/auditforge/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/bimal1023/auditforge/releases/tag/v0.1.0
