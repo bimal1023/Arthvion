@@ -13,7 +13,7 @@ from backend.core.activity import log_activity
 from backend.core.database import get_session
 from backend.core.rate_limit import limiter
 from backend.core.workspace import WorkspaceContext, get_workspace_context, require_role
-from backend.models.db import Deal, Interaction, ReportRecord, User, Workspace
+from backend.models.db import Deal, Interaction, ReportRecord, ScreeningMemo, User, Workspace
 from backend.models.deals import (
     CreateDealRequest,
     CreateInteractionRequest,
@@ -25,6 +25,7 @@ from backend.models.deals import (
     VALID_INTERACTION_KINDS,
     VALID_STAGES,
 )
+from backend.models.screening import ScreeningMemoOut
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["deals"])
@@ -479,3 +480,119 @@ async def delete_interaction(
         raise HTTPException(404, "Interaction not found")
     await db.delete(row)
     await db.commit()
+
+
+# ── AI screening (go/no-go opinion grounded in the deal record) ───────────────
+
+def _screening_out(memo: ScreeningMemo) -> ScreeningMemoOut:
+    data = memo.data or {}
+    return ScreeningMemoOut(
+        id=str(memo.id),
+        deal_id=str(memo.deal_id),
+        recommendation=memo.recommendation,
+        thesis_fit_score=memo.thesis_fit_score,
+        summary=memo.summary or "",
+        strengths=data.get("strengths", []),
+        concerns=data.get("concerns", []),
+        next_step=data.get("next_step", ""),
+        grounded_on=data.get("grounded_on", {}),
+        created_at=memo.created_at.isoformat() if memo.created_at else "",
+    )
+
+
+@router.get("/deals/{deal_id}/screening")
+async def get_screening(
+    deal_id: UUID,
+    ctx: WorkspaceContext = Depends(get_workspace_context),
+    db: AsyncSession = Depends(get_session),
+) -> ScreeningMemoOut | None:
+    """Return the latest screening memo for a deal, or null if none yet."""
+    await _get_owned_deal(deal_id, ctx, db)
+    result = await db.execute(
+        select(ScreeningMemo)
+        .where(ScreeningMemo.deal_id == deal_id)
+        .order_by(ScreeningMemo.created_at.desc())
+        .limit(1)
+    )
+    memo = result.scalar_one_or_none()
+    return _screening_out(memo) if memo else None
+
+
+@router.post("/deals/{deal_id}/screen", status_code=201)
+@limiter.limit("30/hour")
+async def screen_deal(
+    request: Request,
+    deal_id: UUID,
+    ctx: WorkspaceContext = Depends(require_role("admin", "analyst")),
+    db: AsyncSession = Depends(get_session),
+) -> ScreeningMemoOut:
+    """Generate a fast AI go/no-go screen grounded in the deal's context.
+
+    Unlike Deep Dive, this runs no agents and costs no memo credit — it's a
+    single grounded synthesis over the deal fields, its activity timeline, and
+    any linked diligence report.
+    """
+    from backend.services.screening import generate_screening
+
+    deal = await _get_owned_deal(deal_id, ctx, db)
+
+    # Gather the activity timeline (most recent first).
+    rows = await db.execute(
+        select(Interaction)
+        .where(Interaction.deal_id == deal_id)
+        .order_by(Interaction.occurred_at.desc())
+    )
+    interactions = [
+        {
+            "kind": i.kind,
+            "body": i.body,
+            "occurred_at": i.occurred_at.isoformat() if i.occurred_at else "",
+            "due_at": i.due_at.isoformat() if i.due_at else None,
+            "completed": i.completed_at is not None,
+        }
+        for i in rows.scalars().all()
+    ]
+
+    # Pull the linked report's data if a Deep Dive has completed.
+    report_data: dict | None = None
+    if deal.report_id:
+        rec = await db.get(ReportRecord, deal.report_id)
+        if rec and rec.status == "complete" and rec.data:
+            report_data = rec.data
+
+    try:
+        result = await generate_screening(
+            company=deal.company,
+            ticker=deal.ticker,
+            stage=deal.stage,
+            deal_size_usd=deal.deal_size_usd,
+            conviction=deal.conviction,
+            notes=deal.notes or "",
+            interactions=interactions,
+            report_data=report_data,
+        )
+    except Exception:
+        logger.exception("Screening generation failed for deal %s", deal_id)
+        raise HTTPException(502, "Screening could not be generated. Please try again.")
+
+    memo = ScreeningMemo(
+        user_id=ctx.user.id,
+        workspace_id=ctx.workspace.id,
+        deal_id=deal_id,
+        recommendation=result.recommendation,
+        thesis_fit_score=result.thesis_fit_score,
+        summary=result.summary,
+        data={
+            "strengths": result.strengths,
+            "concerns": result.concerns,
+            "next_step": result.next_step,
+            "grounded_on": {
+                "report_linked": report_data is not None,
+                "interaction_count": len(interactions),
+            },
+        },
+    )
+    db.add(memo)
+    await db.commit()
+    await db.refresh(memo)
+    return _screening_out(memo)
