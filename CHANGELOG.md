@@ -27,6 +27,9 @@ The current version lives in [`VERSION`](VERSION) and is mirrored in
   `ScreeningMemo` model, `/deals/{id}/screen` + `/deals/{id}/screening`
   endpoints, screening service, and `ScreeningPanel` in the deal drawer. Runs
   no agents and costs no memo credit.
+- Tasks inbox: a Tasks sidebar tab listing every open task across all deals,
+  grouped Overdue / Scheduled / No due date with one-click completion. New
+  `GET /crm/tasks` endpoint and `TasksView`.
 
 ## [0.1.0] - 2026-07-25
 

@@ -87,3 +87,16 @@ class InteractionOut(BaseModel):
     due_at: str | None = None
     completed_at: str | None = None
     created_at: str
+
+
+class TaskOut(BaseModel):
+    """A task interaction enriched with its parent deal — for the Tasks inbox."""
+    id: str
+    deal_id: str
+    deal_company: str
+    deal_stage: str
+    body: str
+    actor_name: str
+    due_at: str | None = None
+    completed_at: str | None = None
+    created_at: str

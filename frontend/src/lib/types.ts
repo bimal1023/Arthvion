@@ -324,6 +324,20 @@ export interface Interaction {
   created_at: string;
 }
 
+// ── Tasks inbox ───────────────────────────────────────────────────────────────
+
+export interface TaskItem {
+  id: string;
+  deal_id: string;
+  deal_company: string;
+  deal_stage: PipelineStage;
+  body: string;
+  actor_name: string;
+  due_at?: string | null;
+  completed_at?: string | null;
+  created_at: string;
+}
+
 // ── AI deal screening (go/no-go opinion) ──────────────────────────────────────
 
 export type ScreeningRecommendation = "pursue" | "hold" | "pass";

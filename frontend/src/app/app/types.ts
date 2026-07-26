@@ -20,7 +20,7 @@ export interface AgentStatus {
 }
 
 export type NavTab =
-  | "new-report" | "memos" | "live-monitor" | "watchlist" | "pipeline" | "earnings" | "comps" | "screener"
+  | "new-report" | "memos" | "live-monitor" | "watchlist" | "pipeline" | "tasks" | "earnings" | "comps" | "screener"
   | "knowledge-base" | "templates" | "citations"
   | "activity" | "team" | "usage" | "settings";
 
