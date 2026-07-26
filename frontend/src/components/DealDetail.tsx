@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { apiFetch } from "@/lib/auth";
 import { Spinner, fmtUSD } from "./ui";
+import { ScreeningPanel } from "./ScreeningPanel";
 import type { Deal, Interaction, InteractionKind } from "@/lib/types";
 
 /* ── Kind metadata ──────────────────────────────────────────── */
@@ -176,6 +177,9 @@ export function DealDetail({
             <FileText size={13} /> Open deep dive report <ArrowUpRight size={12} />
           </button>
         )}
+
+        {/* AI screen — go/no-go grounded in the deal record */}
+        <ScreeningPanel dealId={deal.id} />
 
         {/* Activity timeline */}
         <div style={{ flex: 1, overflowY: "auto", padding: "var(--s-200) var(--s-250)" }}>

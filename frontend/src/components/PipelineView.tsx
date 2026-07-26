@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Plus, Trash2, FileText, X, Layers, ChevronLeft, ChevronRight,
-  Zap, ArrowUpRight, AlertTriangle,
+  Zap, ArrowUpRight, AlertTriangle, MessageSquare,
 } from "lucide-react";
 import { apiFetch } from "@/lib/auth";
 import { Spinner, fmtUSD } from "./ui";
@@ -521,6 +521,10 @@ function DealCard({
             )}
           </div>
         </div>
+        <button type="button" onClick={() => onOpenDetail(deal)} title="Open deal · activity & notes"
+          style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "var(--n300)", flexShrink: 0 }}>
+          <MessageSquare size={13} />
+        </button>
         <button type="button" onClick={() => onRemove(deal.id)} title="Remove deal"
           style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "var(--n200)", flexShrink: 0 }}>
           <Trash2 size={13} />

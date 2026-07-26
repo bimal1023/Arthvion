@@ -324,6 +324,23 @@ export interface Interaction {
   created_at: string;
 }
 
+// ── AI deal screening (go/no-go opinion) ──────────────────────────────────────
+
+export type ScreeningRecommendation = "pursue" | "hold" | "pass";
+
+export interface ScreeningMemo {
+  id: string;
+  deal_id: string;
+  recommendation: ScreeningRecommendation;
+  thesis_fit_score?: number | null;
+  summary: string;
+  strengths: string[];
+  concerns: string[];
+  next_step: string;
+  grounded_on: { report_linked?: boolean; interaction_count?: number };
+  created_at: string;
+}
+
 // ── Collaboration types ─────────────────────────────────────────────────────
 
 export interface CommentItem {

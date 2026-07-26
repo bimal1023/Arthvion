@@ -595,6 +595,47 @@ class Interaction(Base):
     user: Mapped["User"] = relationship()
 
 
+class ScreeningMemo(Base):
+    """An AI go/no-go screening opinion generated from a deal record.
+
+    Unlike a full 4-agent Deep Dive, this is a fast single-call synthesis
+    grounded in what the team already knows about the deal — its fields, its
+    activity timeline (notes/calls/tasks), and any linked diligence report.
+    The latest memo per deal is the one surfaced; older ones are kept as history.
+    """
+    __tablename__ = "screening_memos"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("workspaces.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    deal_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("deals.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    # "pursue" | "hold" | "pass"
+    recommendation: Mapped[str] = mapped_column(String(10), nullable=False, default="hold")
+    # 0-100 fit against the firm's thesis (nullable when not enough signal).
+    thesis_fit_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    summary: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    # {strengths: [...], concerns: [...], next_step: "...", grounded_on: {...}}
+    data: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    user: Mapped["User"] = relationship()
+
+
 # ── Comments & Collaboration ────────────────────────────────────────────────
 
 class Comment(Base):

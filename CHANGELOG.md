@@ -21,6 +21,12 @@ The current version lives in [`VERSION`](VERSION) and is mirrored in
   task due dates and completion toggles. New `Interaction` model + endpoints
   (`/deals/{id}/interactions`, `/interactions/{id}`) and `DealDetail` drawer
   opened from a pipeline card.
+- AI deal screening: a fast go/no-go opinion (pursue/hold/pass + thesis-fit
+  score, strengths, concerns, next step) generated from the deal record — its
+  fields, activity timeline, and any linked diligence report. New
+  `ScreeningMemo` model, `/deals/{id}/screen` + `/deals/{id}/screening`
+  endpoints, screening service, and `ScreeningPanel` in the deal drawer. Runs
+  no agents and costs no memo credit.
 
 ## [0.1.0] - 2026-07-25
 
