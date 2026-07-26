@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Sparkles, Check, AlertTriangle, ArrowRight, RefreshCw } from "lucide-react";
+import {
+  Sparkles, Check, AlertTriangle, ArrowRight, RefreshCw, ChevronDown, ChevronUp,
+} from "lucide-react";
 import { apiFetch } from "@/lib/auth";
 import { Spinner } from "./ui";
 import type { ScreeningMemo, ScreeningRecommendation } from "@/lib/types";
@@ -24,6 +26,8 @@ export function ScreeningPanel({ dealId }: { dealId: string }) {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
+  // Existing screens open collapsed (verdict only); a fresh run auto-expands.
+  const [expanded, setExpanded] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -43,6 +47,7 @@ export function ScreeningPanel({ dealId }: { dealId: string }) {
       const res = await apiFetch(`/api/v1/deals/${dealId}/screen`, { method: "POST" });
       if (res.ok) {
         setMemo(await res.json());
+        setExpanded(true);
       } else if (res.status === 429) {
         setError("Rate limit reached — try again shortly.");
       } else {
@@ -91,6 +96,12 @@ export function ScreeningPanel({ dealId }: { dealId: string }) {
           {running ? <Spinner /> : memo ? <RefreshCw size={12} /> : <Sparkles size={12} />}
           {running ? "Screening…" : memo ? "Re-run" : "Screen this deal"}
         </button>
+        {memo && (
+          <button type="button" onClick={() => setExpanded((v) => !v)} title={expanded ? "Collapse" : "Expand"}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 2, color: "var(--n300)", flexShrink: 0 }}>
+            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        )}
       </div>
 
       {error && (
@@ -104,36 +115,60 @@ export function ScreeningPanel({ dealId }: { dealId: string }) {
         </p>
       )}
 
-      {/* Result */}
+      {/* Result — summary always shown (clamped when collapsed); detail gated */}
       {memo && (
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
           {memo.summary && (
-            <p style={{ margin: 0, fontSize: 12.5, color: "var(--n800)", lineHeight: 1.55 }}>{memo.summary}</p>
+            <p
+              onClick={() => !expanded && setExpanded(true)}
+              style={{
+                margin: 0, fontSize: 12.5, color: "var(--n800)", lineHeight: 1.55,
+                cursor: expanded ? "default" : "pointer",
+                ...(expanded ? {} : {
+                  display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                  overflow: "hidden",
+                }),
+              }}
+            >{memo.summary}</p>
           )}
 
-          {memo.strengths.length > 0 && (
-            <PointList title="Strengths" color="var(--g600)" icon={Check} items={memo.strengths} />
-          )}
-          {memo.concerns.length > 0 && (
-            <PointList title="Concerns" color="var(--y700)" icon={AlertTriangle} items={memo.concerns} />
-          )}
-
-          {memo.next_step && (
-            <div style={{
-              display: "flex", alignItems: "flex-start", gap: 7, padding: "8px 10px",
-              background: "var(--b50)", border: "1px solid var(--b75)", borderRadius: "var(--r-2)",
+          {!expanded && (
+            <button type="button" onClick={() => setExpanded(true)} style={{
+              alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 4,
+              fontSize: 11.5, fontWeight: 600, color: "var(--b600)", background: "none",
+              border: "none", cursor: "pointer", padding: 0,
             }}>
-              <span style={{ color: "var(--b600)", flexShrink: 0, marginTop: 1 }}><ArrowRight size={13} /></span>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "var(--b700)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Next step
-                </div>
-                <div style={{ fontSize: 12.5, color: "var(--n800)", lineHeight: 1.5, marginTop: 2 }}>{memo.next_step}</div>
-              </div>
-            </div>
+              Show full screen <ChevronDown size={13} />
+            </button>
           )}
 
-          <div style={{ fontSize: 10, color: "var(--n200)" }}>{grounding(memo)}</div>
+          {expanded && (
+            <>
+              {memo.strengths.length > 0 && (
+                <PointList title="Strengths" color="var(--g600)" icon={Check} items={memo.strengths} />
+              )}
+              {memo.concerns.length > 0 && (
+                <PointList title="Concerns" color="var(--y700)" icon={AlertTriangle} items={memo.concerns} />
+              )}
+
+              {memo.next_step && (
+                <div style={{
+                  display: "flex", alignItems: "flex-start", gap: 7, padding: "8px 10px",
+                  background: "var(--b50)", border: "1px solid var(--b75)", borderRadius: "var(--r-2)",
+                }}>
+                  <span style={{ color: "var(--b600)", flexShrink: 0, marginTop: 1 }}><ArrowRight size={13} /></span>
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: "var(--b700)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                      Next step
+                    </div>
+                    <div style={{ fontSize: 12.5, color: "var(--n800)", lineHeight: 1.5, marginTop: 2 }}>{memo.next_step}</div>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ fontSize: 10, color: "var(--n200)" }}>{grounding(memo)}</div>
+            </>
+          )}
         </div>
       )}
     </div>
