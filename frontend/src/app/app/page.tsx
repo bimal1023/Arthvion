@@ -19,6 +19,7 @@ import { ActivityView } from "@/components/ActivityView";
 import { SearchModal } from "@/components/SearchModal";
 import { WatchlistView } from "@/components/WatchlistView";
 import { PipelineView } from "@/components/PipelineView";
+import { TasksView } from "@/components/TasksView";
 import { DealRoomQA } from "@/components/DealRoomQA";
 import { SettingsView } from "@/components/SettingsView";
 import { EarningsView } from "@/components/EarningsView";
@@ -359,6 +360,17 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <PipelineView onOpenReport={handleOpenReportById} />
+                </div>
+              )}
+              {activeTab === "tasks" && (
+                <div className="slide-up">
+                  <div className="page-head">
+                    <div className="page-head-text">
+                      <div className="page-head-title"><h1>Tasks</h1></div>
+                      <p className="page-head-sub">Every open task across your deals — overdue first.</p>
+                    </div>
+                  </div>
+                  <TasksView onOpenPipeline={() => setActiveTab("pipeline")} />
                 </div>
               )}
               {activeTab === "earnings" && (

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   Zap, FileText, Activity as ActivityIcon, Star, Mic, BarChart2 as CompsIcon,
-  Filter, Layers, Lock,
+  Filter, Layers, Lock, ListChecks,
   Folder, FileCode, Globe2, Users, TrendingUp, Settings as SettingsIcon,
   Search, ChevronDown, ChevronRight, LogOut,
 } from "lucide-react";
@@ -129,6 +129,7 @@ export function Sidebar({
         <NavItem icon={ActivityIcon} label="Live monitor" tab="live-monitor" active={activeTab} onClick={onTabChange} badge={liveCount ? <span className="sb-badge green">{liveCount}</span> : undefined} />
         <NavItem icon={Star}         label="Portfolio"    tab="watchlist"    active={activeTab} onClick={onTabChange} badge={watchlistAlertCount ? <span className="sb-badge" style={{ background: "var(--red)", color: "#fff" }}>{watchlistAlertCount}</span> : undefined} />
         <NavItem icon={Layers}       label="Pipeline"     tab="pipeline"     active={activeTab} onClick={onTabChange} />
+        <NavItem icon={ListChecks}   label="Tasks"        tab="tasks"        active={activeTab} onClick={onTabChange} />
         <NavItem icon={Mic}          label="Earnings"     tab="earnings"     active={activeTab} onClick={onTabChange} badge={isSolo ? lockBadge : undefined} />
         <NavItem icon={CompsIcon}   label="Comps"        tab="comps"        active={activeTab} onClick={onTabChange} badge={isSolo ? lockBadge : undefined} />
         <NavItem icon={Filter}      label="Screener"     tab="screener"     active={activeTab} onClick={onTabChange} badge={isSolo ? lockBadge : undefined} />

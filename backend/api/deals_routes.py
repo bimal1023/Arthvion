@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import func, select, update
+from sqlalchemy import func, nullslast, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.core.activity import log_activity
@@ -19,6 +19,7 @@ from backend.models.deals import (
     CreateInteractionRequest,
     DealOut,
     InteractionOut,
+    TaskOut,
     UpdateDealRequest,
     UpdateInteractionRequest,
     VALID_CONVICTION,
@@ -480,6 +481,52 @@ async def delete_interaction(
         raise HTTPException(404, "Interaction not found")
     await db.delete(row)
     await db.commit()
+
+
+# ── Tasks inbox (task interactions across all deals) ──────────────────────────
+
+@router.get("/crm/tasks")
+async def list_tasks(
+    status: str = "open",
+    ctx: WorkspaceContext = Depends(get_workspace_context),
+    db: AsyncSession = Depends(get_session),
+) -> list[TaskOut]:
+    """All task interactions across the workspace's deals.
+
+    `status=open` (default) returns only incomplete tasks; `status=all` includes
+    completed. Ordered open-first, then soonest due (undated last).
+    """
+    q = (
+        select(Interaction, Deal.company, Deal.stage, User.full_name, User.email)
+        .join(Deal, Interaction.deal_id == Deal.id)
+        .join(User, Interaction.user_id == User.id)
+        .where(
+            Interaction.workspace_id == ctx.workspace.id,
+            Interaction.kind == "task",
+        )
+    )
+    if status != "all":
+        q = q.where(Interaction.completed_at.is_(None))
+    q = q.order_by(
+        Interaction.completed_at.isnot(None),          # open before done
+        nullslast(Interaction.due_at.asc()),           # soonest due first, undated last
+        Interaction.created_at.desc(),
+    )
+    result = await db.execute(q)
+    return [
+        TaskOut(
+            id=str(i.id),
+            deal_id=str(i.deal_id),
+            deal_company=company,
+            deal_stage=stage,
+            body=i.body or "",
+            actor_name=full_name or email,
+            due_at=i.due_at.isoformat() if i.due_at else None,
+            completed_at=i.completed_at.isoformat() if i.completed_at else None,
+            created_at=i.created_at.isoformat() if i.created_at else "",
+        )
+        for i, company, stage, full_name, email in result.all()
+    ]
 
 
 # ── AI screening (go/no-go opinion grounded in the deal record) ───────────────
