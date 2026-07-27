@@ -106,25 +106,27 @@ export function Output() {
                   <span className="doc-link">FY24 Q3 earnings transcript</span>.
                 </div>
               </div>
-              <table className="doc-table">
-                <thead>
-                  <tr>
-                    <th>Segment</th><th>FY23</th><th>FY24</th>
-                    <th className="mono">YoY</th><th className="mono">Mix</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {SEGMENT_ROWS.map(([seg, fy23, fy24, yoy, mix, neg]) => (
-                    <tr key={seg}>
-                      <td>{seg}</td>
-                      <td className="mono">{fy23}</td>
-                      <td className="mono">{fy24}</td>
-                      <td className={`ch${neg ? " neg" : ""}`}>{yoy}</td>
-                      <td className="mono">{mix}</td>
+              <div className="doc-table-wrap">
+                <table className="doc-table">
+                  <thead>
+                    <tr>
+                      <th>Segment</th><th>FY23</th><th>FY24</th>
+                      <th className="mono">YoY</th><th className="mono">Mix</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {SEGMENT_ROWS.map(([seg, fy23, fy24, yoy, mix, neg]) => (
+                      <tr key={seg}>
+                        <td>{seg}</td>
+                        <td className="mono">{fy23}</td>
+                        <td className="mono">{fy24}</td>
+                        <td className={`ch${neg ? " neg" : ""}`}>{yoy}</td>
+                        <td className="mono">{mix}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* § 2 · Risk Assessment — severity-grouped, like the real Risk tab */}

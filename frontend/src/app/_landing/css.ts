@@ -233,6 +233,12 @@ export const CSS = `
 }
 .lp-wrap .hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-1000); align-items: center; }
 @media (max-width: 1024px) { .lp-wrap .hero-grid { grid-template-columns: 1fr; gap: var(--s-600); } }
+/* Grid tracks default to a min-content floor, so one wide child (e.g. the
+   report mock's tab row) can push the whole page wider than the viewport.
+   min-width:0 lets every track shrink and keeps overflow inside the child. */
+.lp-wrap .hero-grid > *, .lp-wrap .comp-grid > *, .lp-wrap .how-row > *,
+.lp-wrap .output-grid > *, .lp-wrap .pricing-grid > *, .lp-wrap .proof-stats > *,
+.lp-wrap .quote-grid > *, .lp-wrap .footer-grid > * { min-width: 0; }
 .lp-wrap .hero-eyebrow {
   display: inline-flex; align-items: center; gap: var(--s-100);
   padding: 4px 4px 4px 10px; background: var(--n0); border: 1px solid var(--n30);
@@ -246,6 +252,11 @@ export const CSS = `
 }
 .lp-wrap .hero-actions { display: flex; gap: var(--s-150); margin-top: var(--s-400); flex-wrap: wrap; }
 .lp-wrap .hero-meta { display: flex; gap: var(--s-300); margin-top: var(--s-500); flex-wrap: wrap; }
+/* Four stats wrap raggedly on a phone — pin them to an even 2×2 instead. */
+@media (max-width: 560px) {
+  .lp-wrap .hero-meta { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-300) var(--s-200); }
+  .lp-wrap .hero-actions .btn { flex: 1 1 100%; }
+}
 .lp-wrap .hero-meta-item { display: flex; flex-direction: column; gap: 2px; }
 .lp-wrap .hero-meta-num { font-size: 1.5rem; font-weight: 700; color: var(--n900); letter-spacing: -0.02em; line-height: 1; }
 .lp-wrap .hero-meta-label { font-size: var(--fs-small); color: var(--n200); }
@@ -254,12 +265,13 @@ export const CSS = `
 .lp-wrap .viz-card { background: #fff; border: 1px solid var(--n30); border-radius: var(--r-3); box-shadow: var(--e200); overflow: hidden; }
 .lp-wrap .viz-head {
   display: flex; align-items: center; gap: var(--s-150); padding: var(--s-150) var(--s-200);
-  background: var(--n10); border-bottom: 1px solid var(--n30);
+  background: var(--n10); border-bottom: 1px solid var(--n30); min-width: 0;
 }
-.lp-wrap .viz-head-dots { display: inline-flex; gap: 6px; }
+.lp-wrap .viz-head-dots { display: inline-flex; gap: 6px; flex-shrink: 0; }
 .lp-wrap .viz-head-dots span { width: 10px; height: 10px; border-radius: 999px; background: var(--n30); }
-.lp-wrap .viz-tabs { display: flex; gap: var(--s-50); margin-left: var(--s-200); }
-.lp-wrap .viz-tab { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 11px; color: var(--n300); font-weight: 500; border-radius: var(--r-1); }
+.lp-wrap .viz-tabs { display: flex; gap: var(--s-50); margin-left: var(--s-200); min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.lp-wrap .viz-tabs::-webkit-scrollbar { display: none; }
+.lp-wrap .viz-tab { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; font-size: 11px; color: var(--n300); font-weight: 500; border-radius: var(--r-1); flex-shrink: 0; white-space: nowrap; }
 .lp-wrap .viz-tab.active { background: #fff; color: var(--n800); box-shadow: 0 0 0 1px var(--n30); }
 .lp-wrap .viz-body { padding: var(--s-300); }
 
@@ -296,11 +308,18 @@ export const CSS = `
 .lp-wrap .viz-metric-delta-up { color: var(--g600); }
 .lp-wrap .viz-metric-delta-warn { color: var(--y600); }
 
-/* Section tabs */
-.lp-wrap .viz-sections { display: flex; gap: var(--s-50); padding: var(--s-100) var(--s-200); border-top: 1px solid var(--n30); }
+/* Section tabs — six of them, so this row always scrolls rather than
+   widening the card (which would drag the hero grid past the viewport). */
+.lp-wrap .viz-sections {
+  display: flex; gap: var(--s-50); padding: var(--s-100) var(--s-200);
+  border-top: 1px solid var(--n30);
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
+}
+.lp-wrap .viz-sections::-webkit-scrollbar { display: none; }
 .lp-wrap .viz-section {
   display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px;
   font-size: 11.5px; font-weight: 600; color: var(--n200); border-radius: var(--r-1);
+  flex-shrink: 0; white-space: nowrap;
 }
 .lp-wrap .viz-section.active { background: var(--n10); color: var(--n900); }
 .lp-wrap .viz-finding { padding: var(--s-200); background: var(--b50); border: 1px solid var(--b75); border-radius: var(--r-2); font-size: var(--fs-small); color: var(--n800); line-height: 1.55; }
@@ -317,12 +336,20 @@ export const CSS = `
 .lp-wrap .viz-ask-input button { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 999px; background: var(--b500); color: #fff; border: none; flex-shrink: 0; cursor: default; }
 
 @media (max-width: 640px) {
-  .lp-wrap .viz-top { flex-direction: column-reverse; align-items: flex-start; }
-  .lp-wrap .viz-gauge { padding-left: 0; border-left: none; }
+  /* Keep the desktop row (title left, gauge right) — stacking the gauge left a
+     dead half-row above the title. A smaller dial is what makes it fit. */
+  .lp-wrap .viz-top { gap: var(--s-150); padding: var(--s-200); align-items: center; }
+  .lp-wrap .viz-gauge { padding-left: var(--s-100); border-left: none; }
+  .lp-wrap .viz-gauge svg { width: 68px; height: auto; }
+  .lp-wrap .viz-title h4 { font-size: 1.125rem; }
+  /* Wraps to its own line as a stray leading "·" — drop it, it's decorative. */
+  .lp-wrap .viz-time { display: none; }
   .lp-wrap .viz-metrics { grid-template-columns: repeat(2,1fr); }
   .lp-wrap .viz-metric:nth-child(2) { border-right: none; }
   .lp-wrap .viz-metric:nth-child(-n+2) { border-bottom: 1px solid var(--n30); }
-  .lp-wrap .viz-sections { overflow-x: auto; }
+  .lp-wrap .viz-body { padding: var(--s-200); }
+  .lp-wrap .viz-ask-q { max-width: 88%; }
+  .lp-wrap .viz-ask-a { max-width: 100%; }
 }
 
 /* Logo row */
@@ -435,10 +462,20 @@ export const CSS = `
 .lp-wrap .doc-p sup { color: var(--b600); font-weight: 600; font-family: 'JetBrains Mono',monospace; font-size: 10px; background: var(--b50); padding: 1px 4px; border-radius: var(--r-1); border: 1px solid var(--b75); margin-left: 2px; }
 .lp-wrap .doc-callout { display: flex; gap: var(--s-150); padding: var(--s-200); background: var(--b50); border-radius: var(--r-2); border-left: 3px solid var(--b500); font-size: 13px; margin: var(--s-150) 0; }
 .lp-wrap .doc-callout b { color: var(--n900); font-weight: 600; }
+.lp-wrap .doc-callout svg { flex-shrink: 0; }
+@media (max-width: 640px) {
+  .lp-wrap .doc { padding: var(--s-300) var(--s-200) var(--s-400); }
+  .lp-wrap .doc-cover { flex-wrap: wrap; gap: var(--s-200); }
+  .lp-wrap .doc-cover h3 { font-size: 1.375rem; }
+  .lp-wrap .doc-cover .sub { font-size: 11px; }
+}
 /* Source references inside the mock memo — look like the product's citation
    links but are intentionally inert (the figures are illustrative). */
 .lp-wrap .doc-link { color: var(--b600); font-weight: 500; }
+/* The 5-column segment table can't fit a phone — let it scroll in place. */
+.lp-wrap .doc-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: var(--s-150); }
 .lp-wrap .doc-table { width: 100%; border-collapse: collapse; margin-top: var(--s-150); font-size: 13px; }
+.lp-wrap .doc-table-wrap .doc-table { margin-top: 0; min-width: 320px; }
 .lp-wrap .doc-table th, .lp-wrap .doc-table td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--n30); }
 .lp-wrap .doc-table th { background: var(--n10); font-weight: 600; color: var(--n300); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
 .lp-wrap .doc-table .mono { color: var(--n800); font-weight: 500; }
@@ -634,4 +671,49 @@ export const CSS = `
 
 /* Section-number eyebrows */
 .lp-wrap .sec-num { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--n100); letter-spacing: .1em; margin-right: 6px; }
+
+/* ═══ Mobile refinements ════════════════════════════════════════════════
+   Must stay last in the sheet: .output / .proof / .cta-strip / .footer set
+   their own padding further up at equal specificity, so an earlier media
+   query would lose to them regardless of the viewport. */
+@media (max-width: 768px) {
+  .lp-wrap .output,
+  .lp-wrap .proof,
+  .lp-wrap .cta-strip { padding: var(--s-600) 0; }
+  .lp-wrap .footer { padding: var(--s-600) 0 var(--s-300); }
+
+  .lp-wrap .section-head { margin-bottom: var(--s-400); }
+  .lp-wrap .output-grid { gap: var(--s-400); margin-top: var(--s-300); }
+  .lp-wrap .proof-stats { margin: var(--s-400) 0 var(--s-500); }
+  .lp-wrap .proof-stat { padding: var(--s-300); }
+  .lp-wrap .quote-card { padding: var(--s-300); }
+
+  /* Full-bleed CTA card reads better than a narrow inset one on a phone. */
+  .lp-wrap .cta-card { padding: var(--s-500) var(--s-300); gap: var(--s-200); }
+  .lp-wrap .cta-card .btn { width: 100%; }
+
+  /* Stacked footer baseline — the space-between row collapses at this width. */
+  .lp-wrap .footer-bottom {
+    flex-direction: column; align-items: flex-start; gap: var(--s-150);
+    margin-top: var(--s-400);
+  }
+  .lp-wrap .footer-bottom .links { flex-wrap: wrap; gap: var(--s-150); }
+
+  /* The full link list plus both CTAs is taller than the desktop cap. */
+  .lp-wrap .nav-mobile.open { max-height: 560px; }
+
+  .lp-wrap .marquee-track { gap: var(--s-500); }
+  .lp-wrap .faq-item summary { padding: var(--s-200); font-size: 0.9375rem; gap: var(--s-150); }
+  .lp-wrap .faq-a { padding: 0 var(--s-200) var(--s-200); }
+  .lp-wrap .price-card { padding: var(--s-300); }
+  /* Lift on hover is a mouse affordance; it only causes jitter on touch. */
+  .lp-wrap .price-card:hover,
+  .lp-wrap .price-card.featured:hover,
+  .lp-wrap .quote-card:hover { transform: none; }
+}
+
+@media (max-width: 400px) {
+  .lp-wrap { --h-xxl: clamp(2.25rem, 9vw + .5rem, 2.875rem); }
+  .lp-wrap .container { padding: 0 var(--s-150); }
+}
 `;

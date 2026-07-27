@@ -15,6 +15,29 @@ The current version lives in [`VERSION`](VERSION) and is mirrored in
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-27
+
+### Fixed
+- Landing page no longer scrolls horizontally on phones. The hero's report
+  mock gained Ask and Discussion tabs in 0.2.0, and that six-tab row set a
+  505px min-content floor; because grid tracks size to min-content, it dragged
+  the whole hero grid to 523px inside a 390px viewport, leaving every section
+  squeezed against a dead band on the right. The tab rows now scroll in place
+  and grid children carry `min-width: 0` so a wide child can never widen the
+  page again.
+- Mobile nav menu no longer clips its last item — the panel's `max-height`
+  (460px) was shorter than its own content (514px), cutting off "Get started".
+- The memo mock's 5-column segment table and the `/docs` reference tables
+  scroll within their cards instead of overflowing at ≤400px.
+- `.output`, `.proof`, `.cta-strip` and `.footer` now use mobile section
+  padding. Their rules are declared after the mobile block at equal
+  specificity, so the earlier media query never applied to them.
+
+### Changed
+- Mobile landing polish: hero stats sit in an even 2×2 grid, hero and CTA
+  buttons go full-width, the report mock keeps its gauge inline on a row
+  (with a smaller dial), and card hover-lift is disabled on touch.
+
 ## [0.2.0] - 2026-07-26
 
 AI-native deal CRM: the pipeline gains a relationship + workflow layer that
@@ -54,6 +77,7 @@ Initial versioned baseline of the multi-agent PE due diligence platform.
 - Live SSE report progress with event-log replay and polling fallback.
 - PDF/print report export.
 
-[Unreleased]: https://github.com/bimal1023/auditforge/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/bimal1023/auditforge/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/bimal1023/auditforge/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/bimal1023/auditforge/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/bimal1023/auditforge/releases/tag/v0.1.0

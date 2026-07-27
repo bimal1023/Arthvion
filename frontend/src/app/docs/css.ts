@@ -98,4 +98,12 @@ export const DOCS_CSS = `
   .lp-wrap .docs-shell { grid-template-columns: 1fr; gap: 24px; }
   .lp-wrap .docs-side { position: static; max-height:none; }
 }
+/* The nowrap first column makes these tables wider than a small phone —
+   scroll them in place rather than letting them widen the page. */
+@media (max-width: 640px) {
+  .lp-wrap table.docs-table {
+    display: block; overflow-x: auto; -webkit-overflow-scrolling: touch;
+  }
+  .lp-wrap table.docs-table th, .lp-wrap table.docs-table td { padding: 8px 10px; }
+}
 `;

@@ -23,9 +23,10 @@ export function CTA() {
           <div className="cta-trust" style={{
             display: "flex", alignItems: "center", gap: "var(--s-200)",
             fontSize: "var(--fs-small)", marginTop: "var(--s-100)",
+            flexWrap: "wrap", justifyContent: "center",
           }}>
             {TRUST_CHIPS.map((t) => (
-              <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <span key={t} style={{ display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
                 <IconCheck size={12} /> {t}
               </span>
             ))}
