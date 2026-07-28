@@ -39,6 +39,8 @@ import NotificationsDropdown from "@/components/NotificationsDropdown";
 import { UpgradeGate } from "./components/UpgradeGate";
 import { TeamView } from "./components/TeamView";
 import { useReportRun } from "./hooks/useReportRun";
+import { useDemoMode } from "./demo/useDemoMode";
+import { DemoBadge } from "./demo/DemoBadge";
 
 export default function DashboardPage() {
   const router   = useRouter();
@@ -66,8 +68,11 @@ export default function DashboardPage() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
+  // ── Demo mode (/app?demo=1) — scripted run for recordings/walkthroughs ───────
+  const demo = useDemoMode();
+
   // ── Report-run lifecycle (SSE, polling, agent state) ─────────────────────────
-  const run = useReportRun();
+  const run = useReportRun({ demo });
   const {
     report, statusMsg, error, agents, activeReq, polling, refreshKey,
     phase, runStatus,
@@ -105,6 +110,19 @@ export default function DashboardPage() {
     handleOpenReportById(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
+
+  // ── Demo mode prefills the form ──────────────────────────────────────────────
+  // The scripted run always lands the Apple FY2024 sample, so seed the form to
+  // match — typing a different company would produce a memo about Apple.
+  useEffect(() => {
+    if (!demo.demo || !ready) return;
+    setFormInitial({
+      company_name: "Apple Inc.",
+      ticker: "AAPL",
+      focus_areas: ["financial", "risk", "market", "legal"],
+    });
+    setFormKey((k) => k + 1);
+  }, [demo.demo, ready]);
 
   // ── Sidebar count badges: Memos (total) + Live monitor (in-flight runs) ──────
   // One fetch feeds both — Memos is the full count, Live monitor counts only
@@ -243,12 +261,14 @@ export default function DashboardPage() {
               {/* ── New report ── */}
               {activeTab === "new-report" && (
                 <>
+                  {/* Demo runs never reach the server, so the credit gate must
+                      not block the form during a recording. */}
                   {phase === "idle" && (
                     <NewReportForm
                       key={formKey}
                       onSubmit={handleSubmit}
                       loading={false}
-                      credits={credits}
+                      credits={demo.demo ? 999 : credits}
                       planTier={planTier}
                       initialValues={formInitial}
                       onShowHistory={() => handleTabChange("memos")}
@@ -514,6 +534,7 @@ export default function DashboardPage() {
             onClose={() => setSearchOpen(false)}
             onSelect={handleSelectHistorical}
           />
+          {demo.demo && demo.badge && <DemoBadge />}
         </div>
       </>
     );
@@ -578,6 +599,7 @@ export default function DashboardPage() {
           onClose={() => setSearchOpen(false)}
           onSelect={handleSelectHistorical}
         />
+        {demo.demo && demo.badge && <DemoBadge />}
       </div>
     </>
   );

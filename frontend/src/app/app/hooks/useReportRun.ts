@@ -5,6 +5,8 @@ import { apiFetch } from "@/lib/auth";
 import type { Report, ReportRequest } from "@/lib/types";
 import type { AgentKey, AgentStatus, Phase, RunStatus } from "../types";
 import { AGENT_DEFS, AGENT_LABEL } from "../constants";
+import { DEMO_STEPS, demoAgentWindows } from "../demo/demoTimeline";
+import { buildDemoReport } from "../demo/demoReport";
 
 /**
  * Encapsulates the entire "submit a report → stream → poll → land" lifecycle.
@@ -14,8 +16,16 @@ import { AGENT_DEFS, AGENT_LABEL } from "../constants";
  *  - Actions the UI calls: handleSubmit, handleAbort, handleSelectHistorical
  *  - setReport / setError so the page can clear them when navigating
  *  - refreshKey: bumps when a report completes; pass to RecentReports to force a refetch
+ *
+ * When `demo.demo` is set (see ../demo/useDemoMode), handleSubmit drives the
+ * same state from a local scripted timeline instead of the network — see
+ * runDemo below.
  */
-export function useReportRun() {
+export interface RunOptions {
+  demo?: { demo: boolean; speed: number };
+}
+
+export function useReportRun(opts: RunOptions = {}) {
   const [report,    setReport]    = useState<Report | null>(null);
   const [loading,   setLoading]   = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
@@ -81,7 +91,90 @@ export function useReportRun() {
     setPolling(false);
   }
 
+  // ── Demo mode ────────────────────────────────────────────────────────────────
+  // Drives the identical state machine from a local clock. Deliberately sends
+  // NOTHING to the server: no report row, no credit spend, no cancellable task.
+  // Everything downstream (RunPipeline, ReportViewer) renders as it always does
+  // because it only ever reads `agents` / `statusMsg` / `report`.
+  function runDemo(req: ReportRequest) {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    reportIdRef.current = null; // nothing server-side to DELETE on abort
+
+    const speed = opts.demo?.speed ?? 1;
+    const focus = (req.focus_areas ?? []) as AgentKey[];
+    const windows = demoAgentWindows();
+
+    setLoading(true);
+    setError(null);
+    setReport(null);
+    setActiveReq(req);
+    setAgents(initAgents(focus));
+    setPolling(false);
+    setStatusMsg("Submitting request…");
+
+    const t0 = Date.now();
+    let fired = 0;
+
+    stopProgressTick();
+    tickRef.current = setInterval(() => {
+      if (controller.signal.aborted) { stopProgressTick(); return; }
+      const elapsed = ((Date.now() - t0) / 1000) * speed;
+
+      while (fired < DEMO_STEPS.length && DEMO_STEPS[fired].at <= elapsed) {
+        const step = DEMO_STEPS[fired++];
+        const key = step.agent ?? "";
+
+        if (step.type === "status") {
+          setStatusMsg(step.message ?? "");
+        } else if (step.type === "agent_start") {
+          setAgents((prev) => updateAgent(prev, key, {
+            state: "running",
+            logs: [`→ Starting ${AGENT_LABEL[key] ?? key} analysis…`],
+          }));
+        } else if (step.type === "agent_log") {
+          setAgents((prev) => {
+            const existing = prev.find((a) => a.key === key)?.logs ?? [];
+            return updateAgent(prev, key, { logs: [...existing, step.message ?? ""] });
+          });
+        } else if (step.type === "agent_done") {
+          setAgents((prev) => {
+            const existing = prev.find((a) => a.key === key)?.logs ?? [];
+            return updateAgent(prev, key, {
+              state: "done", confidence: step.confidence, progress: 100,
+              logs: [...existing, `✓ Complete — ${Math.round((step.confidence ?? 0) * 100)}% confidence`],
+            });
+          });
+        }
+      }
+
+      // Ease each running agent's bar across its own scripted window so the
+      // tiles fill visibly. The real tick only creeps ~1%/s, which reads as
+      // stalled when the whole run is compressed to 18 seconds.
+      setAgents((prev) => prev.map((a) => {
+        if (a.state !== "running") return a;
+        const w = windows[a.key];
+        if (!w || w.end <= w.start) return a;
+        const pct = ((elapsed - w.start) / (w.end - w.start)) * 94;
+        return { ...a, progress: Math.max(a.progress, Math.min(94, pct)) };
+      }));
+
+      if (fired >= DEMO_STEPS.length) {
+        stopProgressTick();
+        setTimeout(() => {
+          if (controller.signal.aborted) return;
+          setReport(buildDemoReport(focus));
+          setLoading(false);
+          setStatusMsg("");
+        }, 1400 / speed);
+      }
+    }, 100);
+  }
+
   async function handleSubmit(req: ReportRequest) {
+    if (opts.demo?.demo) { runDemo(req); return; }
+
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;

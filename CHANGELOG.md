@@ -15,6 +15,36 @@ The current version lives in [`VERSION`](VERSION) and is mirrored in
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-27
+
+Demo mode — presentation tooling for launch videos and live walkthroughs.
+
+### Added
+- `/app?demo=1` runs a scripted ~18-second pipeline against a hand-authored
+  Apple FY2024 sample instead of dispatching a real report. Built for filming:
+  a real run takes 2–4 minutes and finishes in a clump, which reads on camera
+  as nothing happening followed by everything happening. The scripted timeline
+  resolves the four agents one at a time so each completion is visible, and
+  eases the progress bars across their own windows (the production tick only
+  creeps ~1%/s, which looks stalled when compressed).
+- Query params: `&speed=` (0.25–4× timeline multiplier, for matching a take to
+  a voiceover) and `&badge=0` (hides the "Demo data" marker for clean capture).
+- `demo/demoReport.ts` — the sample memo: Apple FY2024 financials, six risks,
+  market position, and three legal matters, with citations. Figures are
+  transcribed from the 10-K for presentation and should be verified against the
+  source filing before being published in anything.
+
+### Notes
+- Demo mode is strictly client-side. It sends no request, creates no report
+  row, and spends no memo credit — verified against the API log and the
+  credit ledger. It does **not** bypass authentication; you still sign in.
+- The "Demo data" badge is shown by default on purpose, so sample figures are
+  never mistaken for a real agent run. `&badge=0` is an explicit opt-out.
+- The form is prefilled with Apple Inc./AAPL because the scripted run always
+  lands the Apple sample regardless of what is typed.
+- Plan gating is unchanged — comp your workspace to `firm` via the admin plan
+  endpoint if you need to film Comps, Screener, or Earnings.
+
 ## [0.2.1] - 2026-07-27
 
 ### Fixed
@@ -77,7 +107,8 @@ Initial versioned baseline of the multi-agent PE due diligence platform.
 - Live SSE report progress with event-log replay and polling fallback.
 - PDF/print report export.
 
-[Unreleased]: https://github.com/bimal1023/auditforge/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/bimal1023/auditforge/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/bimal1023/auditforge/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/bimal1023/auditforge/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/bimal1023/auditforge/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/bimal1023/auditforge/releases/tag/v0.1.0
